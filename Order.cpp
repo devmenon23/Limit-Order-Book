@@ -1,53 +1,33 @@
-#include <iostream>
-#include <stdexcept>
-#include <sstream>
+#include "Order.h"
 
-enum Side {
-    BID,
-    ASK
-};
+Order::Order(std::uint64_t idNumber, Side side, std::uint32_t price, std::uint32_t quantity): 
+    idNumber(idNumber), 
+    side(side), 
+    price(price), 
+    initialQuantity(quantity), 
+    remainingQuantity(quantity), 
+    status(Status::PENDING) {}
 
-enum Status {
-    PENDING,
-    FILLED,
-    CANCELED
-};
+// Getter methods
+std::uint64_t Order::getIDNumber() const { return idNumber; }
+Side Order::getSide() const { return side; }
+std::uint32_t Order::getPrice() const { return price; }
+std::uint32_t Order::getInitialQuantity() const { return initialQuantity; }
+std::uint32_t Order::getRemainingQuantity() const { return remainingQuantity; }
+std::uint32_t Order::getFilledQuantity() const { return getInitialQuantity() - getRemainingQuantity(); }
 
-class Order {
-private:
-    int idNumber;
-    Side side;
-    double price;
-    int initialQuantity;
-    int remainingQuantity;
-    Status status;
-
-public:
-    Order(int idNumber, Side side, double price, int quantity): 
-        idNumber(idNumber), side(side), price(price), initialQuantity(quantity), remainingQuantity(quantity), status(Status::PENDING) {}
-
-    // Getter methods
-    int GetIDNumber() const { return idNumber; }
-    Side GetSide() const { return side; }
-    double GetPrice() const { return price; }
-    int GetInitialQuantity() const { return initialQuantity; }
-    int GetRemainingQuantity() const { return remainingQuantity; }
-    int GetFilledQuantity() const { return GetInitialQuantity() - GetRemainingQuantity(); }
-
-    // Fills an order by decreasing remaining quantity
-    void Fill(int quantity) {
-        if (quantity > GetRemainingQuantity()){
-            std::ostringstream err;
-            err << "Order (" << idNumber << ") cannot be filled for more than its current remaining quantity";
-            throw std::invalid_argument(err.str());
-        }
+void Order::fill(std::uint32_t quantity) {
+    if (quantity > getRemainingQuantity()){
+        std::ostringstream err;
+        err << "Order (" << idNumber << ") cannot be filled for more than its current remaining quantity";
+        throw std::invalid_argument(err.str());
+    }
 
         remainingQuantity -= quantity;
         status = Status::FILLED;
-    };
+};
 
-    void CancelOrder(){
-        remainingQuantity = 0;
-        status = Status::CANCELED;
-    }
+void Order::cancelOrder() {
+    remainingQuantity = 0;
+    status = Status::CANCELED;
 };
