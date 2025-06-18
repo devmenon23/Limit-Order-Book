@@ -19,10 +19,10 @@ private:
 
     OrderPointer findHighestBid();
     OrderPointer findLowestAsk();
+    void matchOrders();
 public:
     void addOrder(OrderPointer order);
     void cancelOrder(std::uint64_t idNumber);
-    void matchOrders();
 };
 
 

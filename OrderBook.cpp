@@ -46,6 +46,26 @@ OrderPointer OrderBook::findLowestAsk() {
     return lowestAsk;
 };
 
+void OrderBook::matchOrders() {
+    OrderPointer highestBid = findHighestBid();
+    OrderPointer lowestAsk = findLowestAsk();
+
+    // Fill orders based on remaining quantity differences
+    while (highestBid && lowestAsk && highestBid->getPrice() >= lowestAsk->getPrice()) {
+        std::uint64_t qty = std::min(highestBid->getRemainingQuantity(), lowestAsk->getRemainingQuantity());
+        highestBid->fill(qty);
+        lowestAsk->fill(qty);
+
+        // Redefine highest bid and lowest ask depending on remaining quantities
+        if (highestBid->getRemainingQuantity() == 0) {
+            highestBid = findHighestBid();
+        }
+        if (lowestAsk->getRemainingQuantity() == 0) {
+            lowestAsk = findLowestAsk();
+        }
+    }
+};
+
 void OrderBook::addOrder(OrderPointer order) {
     if (order->getSide() == Side::BUY) {
         // Check if there is a list of the appropriate price level otherwise add a list
@@ -68,6 +88,7 @@ void OrderBook::addOrder(OrderPointer order) {
     }
 
     orders[order->getIDNumber()] = order;
+    matchOrders();
 };
 
 void OrderBook::cancelOrder(std::uint64_t idNumber) {
@@ -90,26 +111,6 @@ void OrderBook::cancelOrder(std::uint64_t idNumber) {
             if (order->getIDNumber() == idNumber) {
                 order->cancelOrder();
             }
-        }
-    }
-};
-
-void OrderBook::matchOrders() {
-    OrderPointer highestBid = findHighestBid();
-    OrderPointer lowestAsk = findLowestAsk();
-
-    // Fill orders based on remaining quantity differences
-    while (highestBid && lowestAsk && highestBid->getPrice() >= lowestAsk->getPrice()) {
-        std::uint64_t qty = std::min(highestBid->getRemainingQuantity(), lowestAsk->getRemainingQuantity());
-        highestBid->fill(qty);
-        lowestAsk->fill(qty);
-
-        // Redefine highest bid and lowest ask depending on remaining quantities
-        if (highestBid->getRemainingQuantity() == 0) {
-            highestBid = findHighestBid();
-        }
-        if (lowestAsk->getRemainingQuantity() == 0) {
-            lowestAsk = findLowestAsk();
         }
     }
 };
