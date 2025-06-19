@@ -13,7 +13,7 @@ MarketState OrderGenerator::sampleNextState() {
     double cumulative = 0.0;
     for (size_t i = 0; i < transitionMatrix[state].size(); i++) {
         cumulative += transitionMatrix[state][i];
-        if (cumulative > randVal){
+        if (cumulative > randVal) {
             return static_cast<MarketState>(i);
         }
     }

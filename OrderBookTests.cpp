@@ -1,6 +1,21 @@
 #include "OrderBookTests.h"
 
-void addAndMatchTest() {
+void completeFillTest() {
+    OrderBook book;
+
+    OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
+    OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 9900, 5);
+
+    book.addOrder(order1);
+    book.addOrder(order2);
+
+    assert(order1->getRemainingQuantity() == 5 && "order1 should have 0 remaining");
+    assert(order2->getRemainingQuantity() == 0 && "order2 should have 0 remaining");
+
+    std::cout << "addAndMatchTest() passed!\n";
+};
+
+void partialFillTest() {
     OrderBook book;
 
     OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
@@ -12,7 +27,25 @@ void addAndMatchTest() {
     assert(order1->getRemainingQuantity() == 5 && "order1 should have 5 remaining");
     assert(order2->getRemainingQuantity() == 0 && "order2 should have 0 remaining");
 
-    std::cout << "addAndMatchTest() passed!\n";
+    std::cout << "partialFillTest() passed!\n";
+};
+
+void multiplePriceLevelTest() {
+    OrderBook book;
+    OrderPointer order;
+
+    for (int i = 0; i < 100; i++) {
+        order = std::make_shared<Order>(1, Side::BUY, std::floor(i/10), 10); // 10 order per price level
+        book.addOrder(order);
+    }
+
+    OrderPointer sellOrder = std::make_shared<Order>(1, Side::BUY, 1000, 10);
+    book.addOrder(sellOrder);
+
+    assert(order->getRemainingQuantity() == 0 && "highestBuyOrder should have 0 remaining");
+    assert(sellOrder->getRemainingQuantity() == 0 && "sellOrder should have 0 remaining");
+
+    std::cout << "partialFillTest() passed!\n";
 };
 
 void timePriorityMatchingTest() {
@@ -46,7 +79,7 @@ void cancelTest() {
     std::cout << "cancelTest() passed!\n";
 };
 
-void benchmarkFiveMillionOrders(){
+void benchmarkFiveMillionOrders() {
     using namespace std::chrono;
     OrderBook book;
 
@@ -80,7 +113,9 @@ void benchmarkFiveMillionOrders(){
 };
 
 int main() {
-    addAndMatchTest();
+    completeFillTest();
+    partialFillTest();
+    multiplePriceLevelTest();
     timePriorityMatchingTest();
     cancelTest();
 

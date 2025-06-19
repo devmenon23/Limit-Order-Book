@@ -68,6 +68,7 @@
         "random": "cpp",
         "algorithm": "cpp",
         "queue": "cpp",
-        "deque": "cpp"
+        "deque": "cpp",
+        "iterator": "cpp"
     }
 }

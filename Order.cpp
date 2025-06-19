@@ -29,6 +29,11 @@ void Order::fill(std::uint32_t quantity) {
 };
 
 void Order::cancelOrder() {
+    if (status == Status::FILLED){
+        std::ostringstream err;
+        err << "Order (" << idNumber << ") cannot be canceled as it is already filled";
+        throw std::logic_error(err.str());
+    }
     remainingQuantity = 0;
     status = Status::CANCELED;
 };
