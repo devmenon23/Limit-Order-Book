@@ -3,7 +3,6 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
-#include <algorithm>
 
 /**
  * @brief Represents a price level in the order book which contains all 
@@ -12,7 +11,7 @@
 struct PriceLevel {
     std::uint32_t price;
     std::size_t startIndex = 0;
-    std::vector<OrderPointer>orders; // FIFO by time priotiy at a certain price level but implemented as vector because ability to iterate is required
+    std::vector<OrderPointer>orders; // FIFO by time priority at a certain price level but implemented as vector because ability to iterate is required
 };
 
 /**
@@ -20,9 +19,11 @@ struct PriceLevel {
  */
 class OrderBook {
 private:
-    std::map<std::uint32_t, PriceLevel, std::greater<std::uint32_t>> bids; // sorted descending
-    std::map<std::uint32_t, PriceLevel, std::less<std::uint32_t>> asks; // sorted ascending
+    std::map<std::uint32_t, PriceLevel, std::greater<>> bids; // sorted descending
+    std::map<std::uint32_t, PriceLevel> asks; // sorted ascending
     std::unordered_map<std::uint64_t, OrderPointer> orders; // to get orders by id
+
+    std::uint8_t cancelCount = 0;
 
     /**
      * @brief Finds the highest bid in the order book
@@ -49,13 +50,17 @@ public:
      * 
      * @param order The shared pointer to the order to be added
      */
-    void addOrder(OrderPointer order);
+    void addOrder(const OrderPointer& order);
     /**
      * @brief Cancels the order related to the specified id number
      * 
      * @param idNumber The id number of the order to be canceled
      */
     void cancelOrder(std::uint64_t idNumber);
+    /**
+     * @brief Removes all canceled orders from all 3 data structures
+     */
+    void removeAllCanceledOrders();
 };
 
 

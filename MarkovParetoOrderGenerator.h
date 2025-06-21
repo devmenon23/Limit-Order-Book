@@ -7,7 +7,7 @@
 /**
  * @brief All market states
  */
-enum MarketState{
+enum class MarketState{
     NEUTRAL,
     BUY_PRESSURE,
     SELL_PRESSURE
@@ -20,24 +20,24 @@ using TransitionMatrix = std::vector<std::vector<double>>;
  */
 class OrderGenerator {
 private:
-    TransitionMatrix transitionMatrix;
-    std::mt19937 rng;
+    const TransitionMatrix& transitionMatrix;
+    std::mt19937& rng;
     MarketState state;
 
     /**
      * @brief Samples the next market state depending on the current state and the transition matrix
      * @return The market state after the transition
      */
-    MarketState sampleNextState();
+    MarketState sampleNextState() const;
     /**
      * @brief Samples a random value from the Pareto distribution with specified properties
      * 
-     * @param xmin The minimum x for the Pareto distribution
+     * @param xMin The minimum x for the Pareto distribution
      * @param alpha The alpha for the Pareto distribution
      * 
      * @return The value sampled from the Pareto distribution
      */
-    double samplePareto(double xmin, double alpha);
+    double samplePareto(double xMin, double alpha) const;
 public:
     /**
      * @brief Constructs an order generator with the given transition matrix and random seed
@@ -45,7 +45,7 @@ public:
      * @param transitionMatrix The Markov transition matrix
      * @param rng The random number generator
      */
-    OrderGenerator(TransitionMatrix transitionMatrix, std::mt19937 rng);
+    OrderGenerator(const TransitionMatrix& transitionMatrix, std::mt19937& rng);
     /**
      * @brief Advances to the next market state according to the Markov model
      * 
@@ -57,26 +57,26 @@ public:
      * 
      * @return The side of the order
      */
-    Side pickOrderSide();
+    Side pickOrderSide() const;
     /**
      * @brief Generates a price for the next order using a Pareto distribution with the given properties
      * 
      * @param referencePrice The reference price to base the new order price on 
      * @param side The side of the order
-     * @param xmin The minimum price offset
+     * @param xMin The minimum price offset
      * @param alpha The Pareto shape parameter
      * 
      * @return The generated order price
      */
-    std::uint32_t generateOrderPrice(std::uint32_t referencePrice, Side side, double xmin = 1.0, double alpha = 2.7);
+    std::uint32_t generateOrderPrice(std::uint32_t referencePrice, Side side, double xMin = 1.0, double alpha = 2.7) const;
         /**
      * @brief Generates a size for the next order using a Pareto distribution with the given properties
      * 
-     * @param xmin The minimum size
+     * @param xMin The minimum size
      * @param alpha The Pareto shape parameter
      * 
      * @return The generated order size
      */
-    std::uint32_t generateOrderSize(double xmin = 10.0, double alpha = 1.7);
+    std::uint32_t generateOrderSize(double xMin = 10.0, double alpha = 1.7) const;
 };
 

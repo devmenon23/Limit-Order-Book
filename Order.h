@@ -1,8 +1,5 @@
 #pragma once
 #include <iostream>
-#include <stdexcept>
-#include <sstream>
-
 /**
  * @brief Both order sides
  */
@@ -48,36 +45,42 @@ public:
      * @return The order's id
      */
     std::uint64_t getIDNumber() const;
-        /**
+    /**
      * @brief Retrieves the side of the order
      * 
      * @return The order's side
      */
     Side getSide() const;
-        /**
+    /**
      * @brief Retrieves the price of the order
      * 
      * @return The order's price
      */
     std::uint32_t getPrice() const;
-        /**
+    /**
      * @brief Retrieves the initial quantity of the order
      * 
      * @return The order's initial quantity
      */
     std::uint32_t getInitialQuantity() const;
-        /**
+    /**
      * @brief Retrieves the remaining quantity of the order
      * 
      * @return The order's remaining quantity
      */
     std::uint32_t getRemainingQuantity() const;
-        /**
+    /**
      * @brief Retrieves the filled quantity of the order
      * 
      * @return The order's filled quantity
      */
     std::uint32_t getFilledQuantity() const;
+    /**
+     * @brief Retrieves the status of the order
+     * 
+     * @return The status of the order
+     */
+    Status getStatus() const;
 
     /**
      * @brief Fills a specified number of shares in the order

@@ -1,3 +1,4 @@
+#pragma once
 #include "OrderBook.h"
 #include "MarkovParetoOrderGenerator.h"
 #include <iostream>
@@ -12,14 +13,25 @@ void completeFillTest();
  */
 void partialFillTest();
 /**
+ * @brief Tests if matching occurs at best price in an order book with multiple price levels
+ */
+void multiplePriceLevelTest();
+/**
  * @brief Tests matching orders according to time priority in the order book
  */
 void timePriorityMatchingTest();
 /**
- * @brief Tests canceling orders in the order book
+ * @brief Tests canceling valid orders in the order book
  */
-void cancelTest();
-
+void cancelValidOrderTest();
+/**
+ * @brief Tests canceling filled orders in the order book
+ */
+void cancelFilledOrderTest();
+/**
+ * @brief Tests canceling non-existent orders in the order book
+ */
+void cancelNonExistentOrderTest();
 /**
  * @brief Benchmarks the efficiency of simulating 5,000,000 orders in the order book
  */

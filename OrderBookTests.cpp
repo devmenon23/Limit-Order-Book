@@ -3,23 +3,23 @@
 void completeFillTest() {
     OrderBook book;
 
-    OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
-    OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 9900, 5);
+    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
+    const OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 9900, 5);
 
     book.addOrder(order1);
     book.addOrder(order2);
 
-    assert(order1->getRemainingQuantity() == 5 && "order1 should have 0 remaining");
+    assert(order1->getRemainingQuantity() == 0 && "order1 should have 0 remaining");
     assert(order2->getRemainingQuantity() == 0 && "order2 should have 0 remaining");
 
-    std::cout << "addAndMatchTest() passed!\n";
-};
+    std::cout << "completeFillTest() passed!\n";
+}
 
 void partialFillTest() {
     OrderBook book;
 
-    OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
-    OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 9900, 5);
+    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
+    const OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 9900, 5);
 
     book.addOrder(order1);
     book.addOrder(order2);
@@ -28,32 +28,36 @@ void partialFillTest() {
     assert(order2->getRemainingQuantity() == 0 && "order2 should have 0 remaining");
 
     std::cout << "partialFillTest() passed!\n";
-};
+}
 
 void multiplePriceLevelTest() {
     OrderBook book;
-    OrderPointer order;
+    OrderPointer highestPriorityBuyOrder;
 
     for (int i = 0; i < 100; i++) {
-        order = std::make_shared<Order>(1, Side::BUY, std::floor(i/10), 10); // 10 order per price level
+        OrderPointer order = std::make_shared<Order>(i, Side::BUY, std::floor(i/10), 10); // 10 order per price level
         book.addOrder(order);
+        // Get first order added to highest price level
+        if (order->getIDNumber() == 90) {
+            highestPriorityBuyOrder = order;
+        }
     }
 
-    OrderPointer sellOrder = std::make_shared<Order>(1, Side::BUY, 1000, 10);
+    const OrderPointer sellOrder = std::make_shared<Order>(100, Side::SELL, 9, 10);
     book.addOrder(sellOrder);
 
-    assert(order->getRemainingQuantity() == 0 && "highestBuyOrder should have 0 remaining");
+    assert(highestPriorityBuyOrder->getRemainingQuantity() == 0 && "highestBuyOrder should have 0 remaining");
     assert(sellOrder->getRemainingQuantity() == 0 && "sellOrder should have 0 remaining");
 
-    std::cout << "partialFillTest() passed!\n";
-};
+    std::cout << "multiplePriceLevelTest() passed!\n";
+}
 
 void timePriorityMatchingTest() {
     OrderBook book;
 
-    OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
-    OrderPointer order2 = std::make_shared<Order>(2, Side::BUY, 10000, 10);
-    OrderPointer order3 = std::make_shared<Order>(3, Side::SELL, 10000, 12);
+    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
+    const OrderPointer order2 = std::make_shared<Order>(2, Side::BUY, 10000, 10);
+    const OrderPointer order3 = std::make_shared<Order>(3, Side::SELL, 10000, 12);
 
     book.addOrder(order1);
     book.addOrder(order2);
@@ -64,20 +68,57 @@ void timePriorityMatchingTest() {
     assert(order3->getRemainingQuantity() == 0 && "order3 should have 0 remaining");
 
     std::cout << "timePriorityMatchingTest() passed!\n";
-};
+}
 
-void cancelTest() {
+void cancelValidOrderTest() {
     OrderBook book;
 
-    OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
+    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
     
     book.addOrder(order1);
     book.cancelOrder(1);
     
     assert(order1->getRemainingQuantity() == 0 && "order1 should have 0 remaining");
 
-    std::cout << "cancelTest() passed!\n";
-};
+    std::cout << "cancelValidOrderTest() passed!\n";
+}
+
+void cancelFilledOrderTest() {
+    OrderBook book;
+
+    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
+    const OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 10000, 10);
+
+    book.addOrder(order1);
+    book.addOrder(order2);
+    bool exceptionCaught = false;
+
+    try {
+        book.cancelOrder(1);
+    } catch (const std::logic_error& e) {
+        exceptionCaught = true;
+    }
+
+    assert(exceptionCaught && "Expected std::logic_error not caught when trying to cancel a filled order");
+
+    std::cout << "cancelFilledOrderTest() passed!\n";
+}
+
+void cancelNonExistentOrderTest() {
+    OrderBook book;
+
+    bool exceptionCaught = false;
+
+    try {
+        book.cancelOrder(1);
+    } catch (const std::logic_error& e) {
+        exceptionCaught = true;
+    }
+
+    assert(exceptionCaught && "Expected std::logic_error not caught when trying to cancel a non-existent order");
+
+    std::cout << "cancelNonExistentOrderTest() passed!\n";
+}
 
 void benchmarkFiveMillionOrders() {
     using namespace std::chrono;
@@ -93,7 +134,7 @@ void benchmarkFiveMillionOrders() {
 
     OrderGenerator generator(matrix, rng);
 
-    auto start = high_resolution_clock::now();
+    const auto start = high_resolution_clock::now();
 
     for (int i = 0; i < 5000000; i++) {
         generator.nextState();
@@ -105,23 +146,25 @@ void benchmarkFiveMillionOrders() {
         book.addOrder(order);
     }
 
-    auto end = high_resolution_clock::now();
-    double elapsed = duration<double>(end - start).count();
+    const auto end = high_resolution_clock::now();
+    const double elapsed = duration<double>(end - start).count();
 
     std::cout << "Processed 5,000,000 orders in " << elapsed << " seconds.\n";
     std::cout << "Throughput: " << (5000000.0 / elapsed) << " orders/sec\n";
-};
+}
 
 int main() {
     completeFillTest();
     partialFillTest();
     multiplePriceLevelTest();
     timePriorityMatchingTest();
-    cancelTest();
+    cancelValidOrderTest();
+    cancelFilledOrderTest();
+    cancelNonExistentOrderTest();
 
     std::cout << "All tests passed!\n";
 
     benchmarkFiveMillionOrders();
 
     return 0;
-};
+}

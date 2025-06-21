@@ -3,7 +3,7 @@
 OrderPointer OrderBook::findHighestBid() {
     OrderPointer highestBid;
 
-    // Find highest bid that is not filled or canceled (has reamaining quantity 0)
+    // Find highest bid that is not filled or canceled (has remaining quantity 0)
     auto it = bids.begin();
     while (it != bids.end()) {
         std::size_t i = it->second.startIndex;
@@ -21,7 +21,7 @@ OrderPointer OrderBook::findHighestBid() {
     }
     highestBid = nullptr; // No valid bid found
     return highestBid;
-};
+}
 
 OrderPointer OrderBook::findLowestAsk() {
     OrderPointer lowestAsk;
@@ -44,7 +44,7 @@ OrderPointer OrderBook::findLowestAsk() {
     }
     lowestAsk = nullptr; // No valid ask found
     return lowestAsk;
-};
+}
 
 void OrderBook::matchOrders() {
     OrderPointer highestBid = findHighestBid();
@@ -52,7 +52,7 @@ void OrderBook::matchOrders() {
 
     // Fill orders based on remaining quantity differences
     while (highestBid && lowestAsk && highestBid->getPrice() >= lowestAsk->getPrice()) {
-        std::uint64_t qty = std::min(highestBid->getRemainingQuantity(), lowestAsk->getRemainingQuantity());
+        const std::uint64_t qty = std::min(highestBid->getRemainingQuantity(), lowestAsk->getRemainingQuantity());
         highestBid->fill(qty);
         lowestAsk->fill(qty);
 
@@ -64,12 +64,12 @@ void OrderBook::matchOrders() {
             lowestAsk = findLowestAsk();
         }
     }
-};
+}
 
-void OrderBook::addOrder(OrderPointer order) {
+void OrderBook::addOrder(const OrderPointer& order) {
     if (order->getSide() == Side::BUY) {
         // Check if there is a list of the appropriate price level otherwise add a list
-        if (bids.count(order->getPrice()) == 0) {
+        if (bids.contains(order->getPrice())) {
             PriceLevel priceLevel;
             priceLevel.price = order->getPrice();
             bids.insert(std::make_pair(order->getPrice(), priceLevel));
@@ -79,7 +79,7 @@ void OrderBook::addOrder(OrderPointer order) {
 
     if (order->getSide() == Side::SELL) {
         // Check if there is a list of the appropriate price level otherwise add a list
-        if (asks.count(order->getPrice()) == 0) {
+        if (asks.contains(order->getPrice())) {
             PriceLevel priceLevel;
             priceLevel.price = order->getPrice();
             asks.insert(std::make_pair(order->getPrice(), priceLevel));
@@ -89,17 +89,25 @@ void OrderBook::addOrder(OrderPointer order) {
 
     orders[order->getIDNumber()] = order;
     matchOrders();
-};
+}
 
-void OrderBook::cancelOrder(std::uint64_t idNumber) {
-    Side side = orders[idNumber]->getSide();
-    std::uint32_t priceLevel = orders[idNumber]->getPrice();
+void OrderBook::cancelOrder(const std::uint64_t idNumber) {
+    if (orders[idNumber] == nullptr){
+        throw std::logic_error("Order ('" + std::to_string(idNumber) + "') does not exist");
+    }
+    if (orders[idNumber]->getStatus() == Status::FILLED){
+        throw std::logic_error("Order ('" + std::to_string(idNumber) + "') cannot be canceled as it is already filled");
+    }
+
+    const Side side = orders[idNumber]->getSide();
+    const std::uint32_t priceLevel = orders[idNumber]->getPrice();
 
     if (side == Side::BUY) {
         // Cancel order through idNumber
-        for (OrderPointer order : bids[priceLevel].orders) {
+        for (const OrderPointer& order : bids[priceLevel].orders) {
             if (order->getIDNumber() == idNumber) {
                 order->cancelOrder();
+                cancelCount++;
                 break;
             }
         }
@@ -107,10 +115,42 @@ void OrderBook::cancelOrder(std::uint64_t idNumber) {
 
     if (side == Side::SELL) {
         // Cancel order through idNumber
-        for (OrderPointer order : asks[priceLevel].orders) {
+        for (const OrderPointer& order : asks[priceLevel].orders) {
             if (order->getIDNumber() == idNumber) {
                 order->cancelOrder();
+                cancelCount++;
+                break;
             }
         }
     }
-};
+
+    // Delete canceled orders when 1000 have been canceled
+    if (cancelCount == 1000) {
+        removeAllCanceledOrders();
+    }
+}
+
+void OrderBook::removeAllCanceledOrders() {
+    for (auto& [price, priceLevel] : bids) {
+        auto& priceLevelOrders = priceLevel.orders;
+        std::erase_if(priceLevelOrders,
+            [](const OrderPointer& order) {
+                    return order->getRemainingQuantity() == 0;
+            });
+    }
+
+    for (auto& [price, priceLevel] : asks) {
+        auto& priceLevelOrders = priceLevel.orders;
+        std::erase_if(priceLevelOrders,
+            [](const OrderPointer& order) {
+                    return order->getRemainingQuantity() == 0;
+            });
+    }
+
+    std::erase_if(orders,
+        [](const OrderPointer& order) {
+            return order->getRemainingQuantity() == 0;
+        });
+
+    cancelCount = 0;
+}
