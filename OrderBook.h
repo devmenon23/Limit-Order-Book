@@ -9,7 +9,7 @@
  * orders at a specific price according to time priority
  */
 struct PriceLevel {
-    std::uint32_t price;
+    std::uint16_t price;
     std::size_t startIndex = 0;
     std::vector<OrderPointer>orders; // FIFO by time priority at a certain price level but implemented as vector because ability to iterate is required
 };
@@ -23,7 +23,7 @@ private:
     std::map<std::uint32_t, PriceLevel> asks; // sorted ascending
     std::unordered_map<std::uint64_t, OrderPointer> orders; // to get orders by id
 
-    std::uint8_t cancelCount = 0;
+    std::uint32_t cancelCount = 0;
 
     /**
      * @brief Finds the highest bid in the order book
@@ -51,6 +51,16 @@ public:
      * @param order The shared pointer to the order to be added
      */
     void addOrder(const OrderPointer& order);
+    /**
+     * @brief Modifies an order with the new properties and places it in back of the order book
+     *
+     * @param idNumber The id number of the order
+     * @param newPrice The price of the order
+     * @param newQty The quantity of the order
+     *
+     * @return A shared pointer to the modified order
+     */
+    OrderPointer modifyOrder(std::uint64_t idNumber, std::uint32_t newPrice, std::uint32_t newQty);
     /**
      * @brief Cancels the order related to the specified id number
      * 

@@ -13,7 +13,8 @@ enum class Side {
  */
 enum class Status {
     PENDING,
-    FILLED,
+    PARTIALLY_FILLED,
+    COMPLETELY_FILLED,
     CANCELED
 };
 
@@ -85,7 +86,7 @@ public:
     /**
      * @brief Fills a specified number of shares in the order
      * 
-     * @param qty the number of shares to fill in the order
+     * @param qty The number of shares to fill in the order
      */
     void fill(std::uint32_t qty);
     /**

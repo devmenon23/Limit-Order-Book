@@ -69,7 +69,7 @@ void OrderBook::matchOrders() {
 void OrderBook::addOrder(const OrderPointer& order) {
     if (order->getSide() == Side::BUY) {
         // Check if there is a list of the appropriate price level otherwise add a list
-        if (bids.contains(order->getPrice())) {
+        if (!bids.contains(order->getPrice())) {
             PriceLevel priceLevel;
             priceLevel.price = order->getPrice();
             bids.insert(std::make_pair(order->getPrice(), priceLevel));
@@ -79,7 +79,7 @@ void OrderBook::addOrder(const OrderPointer& order) {
 
     if (order->getSide() == Side::SELL) {
         // Check if there is a list of the appropriate price level otherwise add a list
-        if (asks.contains(order->getPrice())) {
+        if (!asks.contains(order->getPrice())) {
             PriceLevel priceLevel;
             priceLevel.price = order->getPrice();
             asks.insert(std::make_pair(order->getPrice(), priceLevel));
@@ -91,16 +91,32 @@ void OrderBook::addOrder(const OrderPointer& order) {
     matchOrders();
 }
 
+OrderPointer OrderBook::modifyOrder(std::uint64_t idNumber, std::uint32_t newPrice, std::uint32_t newQty) {
+    if (!orders.contains(idNumber)) {
+        throw std::logic_error("Order('" + std::to_string(idNumber) + "') does not exist");
+    }
+    const OrderPointer tempOrder = orders[idNumber];
+    if (tempOrder->getStatus() != Status::PENDING) {
+        throw std::logic_error("Order('" + std::to_string(idNumber) + "') is not pending so it cannot be modified");
+    }
+
+    const OrderPointer order = std::make_shared<Order>(tempOrder->getIDNumber(), tempOrder->getSide(), newPrice, newQty);
+    cancelOrder(idNumber);
+    addOrder(order);
+    return order;
+}
+
 void OrderBook::cancelOrder(const std::uint64_t idNumber) {
-    if (orders[idNumber] == nullptr){
+    if (!orders.contains(idNumber)) {
         throw std::logic_error("Order ('" + std::to_string(idNumber) + "') does not exist");
     }
-    if (orders[idNumber]->getStatus() == Status::FILLED){
+    const OrderPointer tempOrder = orders[idNumber];
+    if (tempOrder->getStatus() == Status::PARTIALLY_FILLED || tempOrder->getStatus() == Status::COMPLETELY_FILLED) {
         throw std::logic_error("Order ('" + std::to_string(idNumber) + "') cannot be canceled as it is already filled");
     }
 
-    const Side side = orders[idNumber]->getSide();
-    const std::uint32_t priceLevel = orders[idNumber]->getPrice();
+    const Side side = tempOrder->getSide();
+    const std::uint32_t priceLevel = tempOrder->getPrice();
 
     if (side == Side::BUY) {
         // Cancel order through idNumber
@@ -133,23 +149,29 @@ void OrderBook::cancelOrder(const std::uint64_t idNumber) {
 void OrderBook::removeAllCanceledOrders() {
     for (auto& [price, priceLevel] : bids) {
         auto& priceLevelOrders = priceLevel.orders;
-        std::erase_if(priceLevelOrders,
+        priceLevelOrders.erase(
+            std::remove_if(priceLevelOrders.begin() + static_cast<std::vector<OrderPointer>::difference_type>(priceLevel.startIndex),
+            priceLevelOrders.end(),
             [](const OrderPointer& order) {
                     return order->getRemainingQuantity() == 0;
-            });
+            }),
+            priceLevelOrders.end());
     }
 
     for (auto& [price, priceLevel] : asks) {
         auto& priceLevelOrders = priceLevel.orders;
-        std::erase_if(priceLevelOrders,
+        priceLevelOrders.erase(
+            std::remove_if(priceLevelOrders.begin() + static_cast<std::vector<OrderPointer>::difference_type>(priceLevel.startIndex),
+            priceLevelOrders.end(),
             [](const OrderPointer& order) {
                     return order->getRemainingQuantity() == 0;
-            });
+            }),
+            priceLevelOrders.end());
     }
 
     std::erase_if(orders,
-        [](const OrderPointer& order) {
-            return order->getRemainingQuantity() == 0;
+        [](const auto& pair) {
+            return pair.second->getRemainingQuantity() == 0;
         });
 
     cancelCount = 0;

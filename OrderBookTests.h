@@ -21,6 +21,10 @@ void multiplePriceLevelTest();
  */
 void timePriorityMatchingTest();
 /**
+ * @brief Tests modifying a valid order in the order book
+ */
+void modifyValidOrderTest();
+/**
  * @brief Tests canceling valid orders in the order book
  */
 void cancelValidOrderTest();

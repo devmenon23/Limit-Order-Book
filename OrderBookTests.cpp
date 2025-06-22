@@ -70,6 +70,25 @@ void timePriorityMatchingTest() {
     std::cout << "timePriorityMatchingTest() passed!\n";
 }
 
+void modifyValidOrderTest() {
+    OrderBook book;
+
+    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
+    const OrderPointer order2 = std::make_shared<Order>(2, Side::BUY, 5000, 5);
+    const OrderPointer order3 = std::make_shared<Order>(3, Side::SELL, 5000, 5);
+
+    book.addOrder(order1);
+    book.addOrder(order2);
+    OrderPointer modifiedOrder1 = book.modifyOrder(1, 5000, 10);
+    book.addOrder(order3);
+
+    assert(modifiedOrder1->getPrice() == 5000 && "order1 should have a price of 5000");
+    assert(modifiedOrder1->getRemainingQuantity() == 10 && "order1 should have 10 remaining");
+    assert(order2->getRemainingQuantity() == 0 && "order2 should have 0 remaining");
+
+    std::cout << "modifyValidOrderTest() passed!\n";
+}
+
 void cancelValidOrderTest() {
     OrderBook book;
 
@@ -158,6 +177,7 @@ int main() {
     partialFillTest();
     multiplePriceLevelTest();
     timePriorityMatchingTest();
+    modifyValidOrderTest();
     cancelValidOrderTest();
     cancelFilledOrderTest();
     cancelNonExistentOrderTest();

@@ -24,7 +24,12 @@ void Order::fill(const std::uint32_t qty) {
     }
 
         remainingQuantity -= qty;
-        status = Status::FILLED;
+        if (remainingQuantity == 0) {
+            status = Status::COMPLETELY_FILLED;
+        }
+        else if (remainingQuantity < getInitialQuantity()) {
+            status = Status::PARTIALLY_FILLED;
+        }
 }
 
 void Order::cancelOrder() {
