@@ -24,6 +24,7 @@ private:
     std::unordered_map<std::uint64_t, OrderPointer> orders; // to get orders by id
 
     std::uint32_t cancelCount = 0;
+    std::uint32_t fillCount = 0;
 
     /**
      * @brief Finds the highest bid in the order book
@@ -70,7 +71,7 @@ public:
     /**
      * @brief Removes all canceled orders from all 3 data structures
      */
-    void removeAllCanceledOrders();
+    void removeAllSpecificOrders(Status status);
 };
 
 

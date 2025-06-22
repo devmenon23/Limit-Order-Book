@@ -58,10 +58,17 @@ void OrderBook::matchOrders() {
 
         // Redefine highest bid and lowest ask depending on remaining quantities
         if (highestBid->getRemainingQuantity() == 0) {
+            fillCount++;
             highestBid = findHighestBid();
         }
         if (lowestAsk->getRemainingQuantity() == 0) {
+            fillCount++;
             lowestAsk = findLowestAsk();
+        }
+
+        // Delete completely filled orders when 500000 have been completely filled
+        if (fillCount > 500000) {
+            removeAllSpecificOrders(Status::COMPLETELY_FILLED);
         }
     }
 }
@@ -140,39 +147,42 @@ void OrderBook::cancelOrder(const std::uint64_t idNumber) {
         }
     }
 
-    // Delete canceled orders when 1000 have been canceled
-    if (cancelCount == 1000) {
-        removeAllCanceledOrders();
+    // Delete canceled orders when 100000 have been canceled
+    if (cancelCount == 100000) {
+        removeAllSpecificOrders(Status::CANCELED);
     }
 }
 
-void OrderBook::removeAllCanceledOrders() {
+void OrderBook::removeAllSpecificOrders(Status status) {
     for (auto& [price, priceLevel] : bids) {
+        const size_t startIndex = status == Status::CANCELED ? priceLevel.startIndex : 0;
         auto& priceLevelOrders = priceLevel.orders;
         priceLevelOrders.erase(
-            std::remove_if(priceLevelOrders.begin() + static_cast<std::vector<OrderPointer>::difference_type>(priceLevel.startIndex),
+            std::remove_if(priceLevelOrders.begin() + static_cast<std::vector<OrderPointer>::difference_type>(startIndex),
             priceLevelOrders.end(),
-            [](const OrderPointer& order) {
-                    return order->getRemainingQuantity() == 0;
+            [status](const OrderPointer& order) {
+                    return order->getRemainingQuantity() == 0 && order->getStatus() == status;
             }),
             priceLevelOrders.end());
     }
 
     for (auto& [price, priceLevel] : asks) {
+        const size_t startIndex = status == Status::CANCELED ? priceLevel.startIndex : 0;
         auto& priceLevelOrders = priceLevel.orders;
         priceLevelOrders.erase(
-            std::remove_if(priceLevelOrders.begin() + static_cast<std::vector<OrderPointer>::difference_type>(priceLevel.startIndex),
+            std::remove_if(priceLevelOrders.begin() + static_cast<std::vector<OrderPointer>::difference_type>(startIndex),
             priceLevelOrders.end(),
-            [](const OrderPointer& order) {
-                    return order->getRemainingQuantity() == 0;
+            [status](const OrderPointer& order) {
+                    return order->getRemainingQuantity() == 0 && order->getStatus() == status;
             }),
             priceLevelOrders.end());
     }
 
     std::erase_if(orders,
-        [](const auto& pair) {
-            return pair.second->getRemainingQuantity() == 0;
+        [status](const auto& pair) {
+            return pair.second->getRemainingQuantity() == 0 && pair.second->getStatus() == status;
         });
 
-    cancelCount = 0;
+    status == Status::CANCELED ? cancelCount = 0 : fillCount = 0;
 }
+

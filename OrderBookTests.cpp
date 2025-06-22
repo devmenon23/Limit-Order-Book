@@ -157,6 +157,7 @@ void benchmarkFiveMillionOrders() {
 
     for (int i = 0; i < 5000000; i++) {
         generator.nextState();
+
         Side orderSide = generator.pickOrderSide();
         std::uint32_t orderPrice = generator.generateOrderPrice(10000, orderSide, 1.0, 2.5); // reference price is $100.00
         std::uint32_t orderSize = generator.generateOrderSize(10.0, 1.7);
