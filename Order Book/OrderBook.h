@@ -54,7 +54,7 @@ public:
      * @param cancelThreshold_ The threshold count of cancels before cleanup
      * @param fillThreshold_ The threshold count of fills before cleanup
      */
-    OrderBook(std::size_t cancelThreshold_ = 5000, std::size_t fillThreshold_ = 500000);
+    explicit OrderBook(std::size_t cancelThreshold_ = 5000, std::size_t fillThreshold_ = 500000);
     /**
      * @brief Adds an order to the order book and attempts to match it
      * 
