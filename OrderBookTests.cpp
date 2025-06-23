@@ -148,16 +148,17 @@ void benchmarkFiveMillionOrders() {
         {0.10, 0.85, 0.05}, // Buy Pressure
         {0.10, 0.05, 0.85} // Sell Pressure
     };
+
     std::random_device rd;
     std::mt19937 rng(rd());
 
     OrderGenerator generator(matrix, rng);
+    constexpr int NUM_ORDERS = 5000000;
 
     const auto start = high_resolution_clock::now();
 
-    for (int i = 0; i < 5000000; i++) {
+    for (int i = 0; i < NUM_ORDERS; i++) {
         generator.nextState();
-
         Side orderSide = generator.pickOrderSide();
         std::uint32_t orderPrice = generator.generateOrderPrice(10000, orderSide, 1.0, 2.5); // reference price is $100.00
         std::uint32_t orderSize = generator.generateOrderSize(10.0, 1.7);
@@ -169,11 +170,89 @@ void benchmarkFiveMillionOrders() {
     const auto end = high_resolution_clock::now();
     const double elapsed = duration<double>(end - start).count();
 
-    std::cout << "Processed 5,000,000 orders in " << elapsed << " seconds.\n";
-    std::cout << "Throughput: " << (5000000.0 / elapsed) << " orders/sec\n";
+    std::cout << "Five Million Orders Benchmark (Add Only):\n";
+    std::cout << "Processed " << NUM_ORDERS << " orders in " << elapsed << " seconds.\n";
+    std::cout << "Throughput: " << (NUM_ORDERS / elapsed) << " orders/sec\n\n";
+}
+
+void benchmarkOneMillionOperations() {
+    using namespace std::chrono;
+    OrderBook book;
+
+    TransitionMatrix matrix = {
+        {0.80, 0.10, 0.10}, // Neutral
+        {0.10, 0.85, 0.05}, // Buy Pressure
+        {0.10, 0.05, 0.85} // Sell Pressure
+    };
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    std::uniform_real_distribution actionDist(0.0, 1.0);
+
+    OrderGenerator generator(matrix, rng);
+
+    std::vector<std::uint64_t> activeOrderIds;
+    constexpr int NUM_OPS = 1000000;
+    int adds = 0, cancels = 0, modifies = 0;
+
+    const auto start = high_resolution_clock::now();
+
+    for (int i = 0; i < NUM_OPS; i++) {
+        double action = actionDist(rng);
+        if (action < 0.6 || activeOrderIds.empty()) {
+            // Add order
+            generator.nextState();
+            Side orderSide = generator.pickOrderSide();
+            std::uint32_t orderPrice = generator.generateOrderPrice(10000, orderSide, 1.0, 2.5); // reference price is $100.00
+            std::uint32_t orderSize = generator.generateOrderSize(10.0, 1.7);
+
+            OrderPointer order = std::make_shared<Order>(i, orderSide, orderPrice, orderSize);
+            book.addOrder(order);
+            activeOrderIds.push_back(i);
+            adds++;
+        }
+        else if (action < 0.8 && !activeOrderIds.empty()) {
+            // Cancel random order
+            std::uniform_int_distribution<std::size_t> idXDist(0, activeOrderIds.size() - 1);
+            const std::size_t idX = idXDist(rng);
+            const std::uint32_t cancelId = activeOrderIds[idX];
+            try {
+                book.cancelOrder(cancelId);
+                cancels++;
+            }
+            catch (const std::logic_error& e) {}
+            // O(1) removal
+            //activeOrderIds[idX] = activeOrderIds.back();
+            //activeOrderIds.pop_back();
+        }
+        else if (!activeOrderIds.empty()) {
+            // Modify random order
+            std::uniform_int_distribution<std::size_t> idXDist(0, activeOrderIds.size() - 1);
+            const std::size_t idX = idXDist(rng);
+            const std::uint32_t modifyId = activeOrderIds[idX];
+
+            try {
+                const std::uint32_t newPrice = generator.generateOrderPrice(10000, book.getOrder(modifyId)->getSide(), 1.0, 2.5);
+                const std::uint32_t newQty = generator.generateOrderSize(10.0, 1.7);
+
+                book.modifyOrder(modifyId, newPrice, newQty);
+                modifies++;
+            }
+            catch (const std::logic_error& e) {}
+        }
+    }
+
+    const auto end = high_resolution_clock::now();
+    const double elapsed = duration<double>(end - start).count();
+
+    std::cout << "1 Million Operations Benchmark (Add/Cancel/Modify):\n";
+    std::cout << "Adds: " << adds << ", Cancels: " << cancels << ", Modifies: " << modifies << "\n";
+    std::cout << "Processed " << NUM_OPS << " operations in " << elapsed << " seconds.\n";
+    std::cout << "Throughput: " << (NUM_OPS / elapsed) << " ops/sec\n\n";
 }
 
 int main() {
+    std::cout << "TESTS\n";
+    std::cout << "----------------\n";
     completeFillTest();
     partialFillTest();
     multiplePriceLevelTest();
@@ -184,8 +263,12 @@ int main() {
     cancelNonExistentOrderTest();
 
     std::cout << "All tests passed!\n";
+    std::cout << "----------------\n";
 
+    std::cout << "BENCHMARKING\n";
+    std::cout << "----------------\n";
     benchmarkFiveMillionOrders();
+    benchmarkOneMillionOperations();
 
     return 0;
 }

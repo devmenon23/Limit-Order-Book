@@ -1,5 +1,10 @@
 #include "OrderBook.h"
 
+OrderBook::OrderBook(std::size_t cancelThreshold, std::size_t fillThreshold):
+    cancelThreshold(cancelThreshold), fillThreshold(fillThreshold)
+{}
+
+
 OrderPointer OrderBook::findHighestBid() {
     OrderPointer highestBid;
 
@@ -79,6 +84,7 @@ void OrderBook::addOrder(const OrderPointer& order) {
         if (!bids.contains(order->getPrice())) {
             PriceLevel priceLevel;
             priceLevel.price = order->getPrice();
+            priceLevel.orders.reserve(1024);
             bids.insert(std::make_pair(order->getPrice(), priceLevel));
         }
         bids[order->getPrice()].orders.push_back(order);
@@ -89,6 +95,7 @@ void OrderBook::addOrder(const OrderPointer& order) {
         if (!asks.contains(order->getPrice())) {
             PriceLevel priceLevel;
             priceLevel.price = order->getPrice();
+            priceLevel.orders.reserve(1024);
             asks.insert(std::make_pair(order->getPrice(), priceLevel));
         }
         asks[order->getPrice()].orders.push_back(order);
@@ -147,8 +154,8 @@ void OrderBook::cancelOrder(const std::uint64_t idNumber) {
         }
     }
 
-    // Delete canceled orders when 100000 have been canceled
-    if (cancelCount == 100000) {
+    // Delete canceled orders when 5000 have been canceled
+    if (cancelCount == 5000) {
         removeAllSpecificOrders(Status::CANCELED);
     }
 }
@@ -184,5 +191,13 @@ void OrderBook::removeAllSpecificOrders(Status status) {
         });
 
     status == Status::CANCELED ? cancelCount = 0 : fillCount = 0;
+}
+
+OrderPointer OrderBook::getOrder(std::uint64_t idNumber) {
+    if (!orders.contains(idNumber)) {
+        throw std::logic_error("Order ('" + std::to_string(idNumber) + "') does not exist");
+    }
+
+    return orders[idNumber];
 }
 

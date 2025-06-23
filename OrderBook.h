@@ -25,6 +25,8 @@ private:
 
     std::uint32_t cancelCount = 0;
     std::uint32_t fillCount = 0;
+    std::size_t cancelThreshold;
+    std::size_t fillThreshold;
 
     /**
      * @brief Finds the highest bid in the order book
@@ -46,6 +48,13 @@ private:
      */
     void matchOrders();
 public:
+    /**
+     * @brief Constructs a new order book
+     *
+     * @param cancelThreshold_ The threshold count of cancels before cleanup
+     * @param fillThreshold_ The threshold count of fills before cleanup
+     */
+    OrderBook(std::size_t cancelThreshold_ = 5000, std::size_t fillThreshold_ = 500000);
     /**
      * @brief Adds an order to the order book and attempts to match it
      * 
@@ -72,6 +81,14 @@ public:
      * @brief Removes all canceled orders from all 3 data structures
      */
     void removeAllSpecificOrders(Status status);
+    /**
+     * @brief Retrieves the order with the given id in the order book
+     *
+     * @param idNumber The id number of the order to be retrieved
+     *
+     * @return A shared pointer to the modified order
+     */
+    OrderPointer getOrder(std::uint64_t idNumber);
 };
 
 

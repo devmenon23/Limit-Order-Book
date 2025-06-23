@@ -40,3 +40,7 @@ void cancelNonExistentOrderTest();
  * @brief Benchmarks the efficiency of simulating 5,000,000 orders in the order book
  */
 void benchmarkFiveMillionOrders();
+/**
+ * @brief Benchmarks the efficiency of simulating 1,000,000 operations in the order book
+ */
+void benchmarkOneMillionOperations();
