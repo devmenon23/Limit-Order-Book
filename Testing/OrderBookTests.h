@@ -1,9 +1,9 @@
 #pragma once
-#include "OrderBook.h"
-#include "MarkovParetoOrderGenerator.h"
+#include "Order Book/OrderBook.h"
+#include "Order Generator/MarkovParetoOrderGenerator.h"
 #include <iostream>
+#include <cassert>
 #include <chrono>
-
 /**
  * @brief Tests filling orders completely in the order book
  */
@@ -43,4 +43,4 @@ void benchmarkFiveMillionOrders();
 /**
  * @brief Benchmarks the efficiency of simulating 1,000,000 operations in the order book
  */
-void benchmarkOneMillionOperations();
+void benchmarkFiveMillionOperations();

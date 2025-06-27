@@ -31,8 +31,3 @@ void Order::fill(const std::uint32_t qty) {
             status = Status::PARTIALLY_FILLED;
         }
 }
-
-void Order::cancelOrder() {
-    remainingQuantity = 0;
-    status = Status::CANCELED;
-}

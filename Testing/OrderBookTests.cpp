@@ -8,9 +8,10 @@ void completeFillTest() {
 
     book.addOrder(order1);
     book.addOrder(order2);
+    book.matchOrders();
 
-    assert(order1->getRemainingQuantity() == 0 && "order1 should have 0 remaining");
-    assert(order2->getRemainingQuantity() == 0 && "order2 should have 0 remaining");
+    assert(!book.contains(order1) && "order1 should be removed from the order book");
+    assert(!book.contains(order2) && "order2 should be removed from the order book");
 
     std::cout << "completeFillTest() passed!\n";
 }
@@ -23,9 +24,11 @@ void partialFillTest() {
 
     book.addOrder(order1);
     book.addOrder(order2);
+    book.matchOrders();
 
+    assert(book.contains(order1) && "order1 should be in the order book");
     assert(order1->getRemainingQuantity() == 5 && "order1 should have 5 remaining");
-    assert(order2->getRemainingQuantity() == 0 && "order2 should have 0 remaining");
+    assert(!book.contains(order2) && "order2 should be removed from the order book");
 
     std::cout << "partialFillTest() passed!\n";
 }
@@ -45,9 +48,10 @@ void multiplePriceLevelTest() {
 
     const OrderPointer sellOrder = std::make_shared<Order>(100, Side::SELL, 9, 10);
     book.addOrder(sellOrder);
+    book.matchOrders();
 
-    assert(highestPriorityBuyOrder->getRemainingQuantity() == 0 && "highestBuyOrder should have 0 remaining");
-    assert(sellOrder->getRemainingQuantity() == 0 && "sellOrder should have 0 remaining");
+    assert(!book.contains(highestPriorityBuyOrder) && "highestPriorityBuyOrder should be removed from the order book");
+    assert(!book.contains(sellOrder) && "sellOrder should be removed from the order book");
 
     std::cout << "multiplePriceLevelTest() passed!\n";
 }
@@ -62,10 +66,12 @@ void timePriorityMatchingTest() {
     book.addOrder(order1);
     book.addOrder(order2);
     book.addOrder(order3);
+    book.matchOrders();
 
-    assert(order1->getRemainingQuantity() == 0 && "order1 should have 0 remaining");
+    assert(!book.contains(order1) && "order1 should be removed from the order book");
+    assert(book.contains(order2) && "order2 should be in the order book");
     assert(order2->getRemainingQuantity() == 3 && "order2 should have 3 remaining");
-    assert(order3->getRemainingQuantity() == 0 && "order3 should have 0 remaining");
+    assert(!book.contains(order3) && "order3 should be removed from the order book");
 
     std::cout << "timePriorityMatchingTest() passed!\n";
 }
@@ -79,12 +85,13 @@ void modifyValidOrderTest() {
 
     book.addOrder(order1);
     book.addOrder(order2);
-    OrderPointer modifiedOrder1 = book.modifyOrder(1, 5000, 10);
+    const OrderPointer modifiedOrder1 = book.modifyOrder(1, 5000, 10);
     book.addOrder(order3);
+    book.matchOrders();
 
     assert(modifiedOrder1->getPrice() == 5000 && "order1 should have a price of 5000");
     assert(modifiedOrder1->getRemainingQuantity() == 10 && "order1 should have 10 remaining");
-    assert(order2->getRemainingQuantity() == 0 && "order2 should have 0 remaining");
+    assert(!book.contains(order2) && "order2 should be removed from the order book");
 
     std::cout << "modifyValidOrderTest() passed!\n";
 }
@@ -96,8 +103,9 @@ void cancelValidOrderTest() {
     
     book.addOrder(order1);
     book.cancelOrder(1);
+    book.matchOrders();
     
-    assert(order1->getRemainingQuantity() == 0 && "order1 should have 0 remaining");
+    assert(!book.contains(order1) && "order1 should be removed from the order book");
 
     std::cout << "cancelValidOrderTest() passed!\n";
 }
@@ -110,8 +118,9 @@ void cancelFilledOrderTest() {
 
     book.addOrder(order1);
     book.addOrder(order2);
-    bool exceptionCaught = false;
+    book.matchOrders();
 
+    bool exceptionCaught = false;
     try {
         book.cancelOrder(1);
     } catch (const std::logic_error& e) {
@@ -165,17 +174,18 @@ void benchmarkFiveMillionOrders() {
 
         OrderPointer order = std::make_shared<Order>(i, orderSide, orderPrice, orderSize);
         book.addOrder(order);
+        book.matchOrders();
     }
 
     const auto end = high_resolution_clock::now();
     const double elapsed = duration<double>(end - start).count();
 
-    std::cout << "Five Million Orders Benchmark (Add Only):\n";
+    std::cout << "5 Million Orders Benchmark (Add Only):\n";
     std::cout << "Processed " << NUM_ORDERS << " orders in " << elapsed << " seconds.\n";
     std::cout << "Throughput: " << (NUM_ORDERS / elapsed) << " orders/sec\n\n";
 }
 
-void benchmarkOneMillionOperations() {
+void benchmarkFiveMillionOperations() {
     using namespace std::chrono;
     OrderBook book;
 
@@ -191,7 +201,7 @@ void benchmarkOneMillionOperations() {
     OrderGenerator generator(matrix, rng);
 
     std::vector<std::uint64_t> activeOrderIds;
-    constexpr int NUM_OPS = 1000000;
+    constexpr int NUM_OPS = 5000000;
     int adds = 0, cancels = 0, modifies = 0;
 
     const auto start = high_resolution_clock::now();
@@ -207,34 +217,36 @@ void benchmarkOneMillionOperations() {
 
             OrderPointer order = std::make_shared<Order>(i, orderSide, orderPrice, orderSize);
             book.addOrder(order);
+            book.matchOrders();
             activeOrderIds.push_back(i);
             adds++;
         }
         else if (action < 0.8 && !activeOrderIds.empty()) {
             // Cancel random order
-            std::uniform_int_distribution<std::size_t> idXDist(0, activeOrderIds.size() - 1);
-            const std::size_t idX = idXDist(rng);
-            const std::uint32_t cancelId = activeOrderIds[idX];
+            std::uniform_int_distribution<std::size_t> indexDist(0, activeOrderIds.size() - 1);
+            const std::size_t index = indexDist(rng);
+            const std::uint32_t cancelId = activeOrderIds[index];
             try {
                 book.cancelOrder(cancelId);
                 cancels++;
             }
             catch (const std::logic_error& e) {}
+
             // O(1) removal
-            //activeOrderIds[idX] = activeOrderIds.back();
-            //activeOrderIds.pop_back();
+            activeOrderIds[index] = activeOrderIds.back();
+            activeOrderIds.pop_back();
         }
         else if (!activeOrderIds.empty()) {
             // Modify random order
-            std::uniform_int_distribution<std::size_t> idXDist(0, activeOrderIds.size() - 1);
-            const std::size_t idX = idXDist(rng);
-            const std::uint32_t modifyId = activeOrderIds[idX];
-
+            std::uniform_int_distribution<std::size_t> indexDist(0, activeOrderIds.size() - 1);
+            const std::size_t index = indexDist(rng);
+            const std::uint32_t modifyId = activeOrderIds[index];
             try {
-                const std::uint32_t newPrice = generator.generateOrderPrice(10000, book.getOrder(modifyId)->getSide(), 1.0, 2.5);
+                const std::uint32_t newPrice = generator.generateOrderPrice(10000, book.getOrderByID(modifyId)->getSide(), 1.0, 2.5);
                 const std::uint32_t newQty = generator.generateOrderSize(10.0, 1.7);
 
                 book.modifyOrder(modifyId, newPrice, newQty);
+                book.matchOrders();
                 modifies++;
             }
             catch (const std::logic_error& e) {}
@@ -244,14 +256,14 @@ void benchmarkOneMillionOperations() {
     const auto end = high_resolution_clock::now();
     const double elapsed = duration<double>(end - start).count();
 
-    std::cout << "1 Million Operations Benchmark (Add/Cancel/Modify):\n";
+    std::cout << "5 Million Operations Benchmark (Add/Cancel/Modify):\n";
     std::cout << "Adds: " << adds << ", Cancels: " << cancels << ", Modifies: " << modifies << "\n";
     std::cout << "Processed " << NUM_OPS << " operations in " << elapsed << " seconds.\n";
     std::cout << "Throughput: " << (NUM_OPS / elapsed) << " ops/sec\n\n";
 }
 
 int main() {
-    std::cout << "TESTS\n";
+    std::cout << "UNIT TESTS\n";
     std::cout << "----------------\n";
     completeFillTest();
     partialFillTest();
@@ -268,7 +280,7 @@ int main() {
     std::cout << "BENCHMARKING\n";
     std::cout << "----------------\n";
     benchmarkFiveMillionOrders();
-    benchmarkOneMillionOperations();
+    benchmarkFiveMillionOperations();
 
     return 0;
 }

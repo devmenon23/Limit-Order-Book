@@ -1,8 +1,11 @@
 #pragma once
 #include "Order.h"
-#include <vector>
+#include <list>
 #include <map>
 #include <unordered_map>
+
+#include "OrderBook.h"
+#include "OrderBook.h"
 
 /**
  * @brief Represents a price level in the order book which contains all 
@@ -10,51 +13,25 @@
  */
 struct PriceLevel {
     std::uint16_t price;
-    std::size_t startIndex = 0;
-    std::vector<OrderPointer>orders; // FIFO by time priority at a certain price level but implemented as vector because ability to iterate is required
+    std::list<OrderPointer>orders; // FIFO by time priority at a certain price level but implemented as doubly-linked list because ability to iterate is required
+    std::unordered_map<std::uint64_t, std::list<OrderPointer>::iterator> orderIters;
 };
+
+using PriceLevelPointer = std::shared_ptr<PriceLevel>;
 
 /**
  * @brief Represents a limit order book for matching buy and sell orders
  */
 class OrderBook {
 private:
-    std::map<std::uint32_t, PriceLevel, std::greater<>> bids; // sorted descending
-    std::map<std::uint32_t, PriceLevel> asks; // sorted ascending
+    std::unordered_map<std::uint32_t, PriceLevelPointer> bids;
+    std::unordered_map<std::uint32_t, PriceLevelPointer> asks;
     std::unordered_map<std::uint64_t, OrderPointer> orders; // to get orders by id
 
-    std::uint32_t cancelCount = 0;
-    std::uint32_t fillCount = 0;
-    std::size_t cancelThreshold;
-    std::size_t fillThreshold;
+    PriceLevelPointer highestBidLevel;
+    PriceLevelPointer lowestAskLevel;
 
-    /**
-     * @brief Finds the highest bid in the order book
-     * 
-     * @return A shared pointer to the highest bid in the order book
-     */
-    OrderPointer findHighestBid();
-    /**
-     * @brief Finds the lowest ask in the order book
-     * 
-     * @return A shared pointer to the lowest ask in the order book
-     */
-    OrderPointer findLowestAsk();
-    /**
-     * @brief Matches buy and sell orders in the order book according to 
-     * price-time priority
-     * 
-     * @return A shared pointer to the lowest ask in the order book
-     */
-    void matchOrders();
 public:
-    /**
-     * @brief Constructs a new order book
-     *
-     * @param cancelThreshold_ The threshold count of cancels before cleanup
-     * @param fillThreshold_ The threshold count of fills before cleanup
-     */
-    explicit OrderBook(std::size_t cancelThreshold_ = 5000, std::size_t fillThreshold_ = 500000);
     /**
      * @brief Adds an order to the order book and attempts to match it
      * 
@@ -78,9 +55,12 @@ public:
      */
     void cancelOrder(std::uint64_t idNumber);
     /**
-     * @brief Removes all canceled orders from all 3 data structures
+     * @brief Matches buy and sell orders in the order book according to
+     * price-time priority
+     *
+     * @return A shared pointer to the lowest ask in the order book
      */
-    void removeAllSpecificOrders(Status status);
+    void matchOrders();
     /**
      * @brief Retrieves the order with the given id in the order book
      *
@@ -88,7 +68,19 @@ public:
      *
      * @return A shared pointer to the modified order
      */
-    OrderPointer getOrder(std::uint64_t idNumber);
+    OrderPointer getOrderByID(std::uint64_t idNumber);
+    /**
+     * @brief Retrieves the total number of orders in the order book
+     *
+     * @return A shared pointer to the modified order
+     */
+    std::size_t getNumberOfOrders() const;
+    /**
+     * @brief Retrieves if order is in the order book or not
+     *
+     * @return If the order book contains order
+     */
+    bool contains(const OrderPointer& order) const;
 };
 
 

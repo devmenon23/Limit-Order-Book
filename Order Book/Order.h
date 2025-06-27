@@ -14,8 +14,7 @@ enum class Side {
 enum class Status {
     PENDING,
     PARTIALLY_FILLED,
-    COMPLETELY_FILLED,
-    CANCELED
+    COMPLETELY_FILLED
 };
 
 /**
@@ -89,10 +88,6 @@ public:
      * @param qty The number of shares to fill in the order
      */
     void fill(std::uint32_t qty);
-    /**
-     * @brief Cancels the order by making the remaining quantity 0
-     */
-    void cancelOrder();
 };
 
 using OrderPointer = std::shared_ptr<Order>;
