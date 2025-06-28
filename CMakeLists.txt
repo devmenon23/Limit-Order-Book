@@ -9,8 +9,8 @@ include_directories(.)
 
 
 add_executable(Limit_Order_Book
-        "Order Generator/MarkovParetoOrderGenerator.cpp"
-        "Order Book/Order.cpp"
-        "Order Book/OrderBook.cpp"
+        "Order_Generator/MarkovParetoOrderGenerator.cpp"
+        "Order_Book/Order.cpp"
+        "Order_Book/OrderBook.cpp"
         "Testing/OrderBookTests.cpp"
 )

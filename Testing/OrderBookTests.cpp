@@ -36,6 +36,7 @@ void partialFillTest() {
 void multiplePriceLevelTest() {
     OrderBook book;
     OrderPointer highestPriorityBuyOrder;
+    OrderPointer secondHighestPriorityBuyOrder;
 
     for (int i = 0; i < 100; i++) {
         OrderPointer order = std::make_shared<Order>(i, Side::BUY, std::floor(i/10), 10); // 10 order per price level
@@ -44,14 +45,21 @@ void multiplePriceLevelTest() {
         if (order->getIDNumber() == 90) {
             highestPriorityBuyOrder = order;
         }
+        else if (order->getIDNumber() == 91) {
+            secondHighestPriorityBuyOrder = order;
+        }
     }
 
-    const OrderPointer sellOrder = std::make_shared<Order>(100, Side::SELL, 9, 10);
-    book.addOrder(sellOrder);
+    const OrderPointer sellOrder1 = std::make_shared<Order>(100, Side::SELL, 9, 10);
+    const OrderPointer sellOrder2 = std::make_shared<Order>(101, Side::SELL, 9, 5);
+    book.addOrder(sellOrder1);
+    book.addOrder(sellOrder2);
     book.matchOrders();
 
     assert(!book.contains(highestPriorityBuyOrder) && "highestPriorityBuyOrder should be removed from the order book");
-    assert(!book.contains(sellOrder) && "sellOrder should be removed from the order book");
+    assert(!book.contains(sellOrder1) && "sellOrder1 should be removed from the order book");
+    assert(secondHighestPriorityBuyOrder->getRemainingQuantity() == 5 && "secondHighestPriorityBuyOrder should have 5 remaining");
+    assert(!book.contains(sellOrder2) && "sellOrder2 should be removed from the order book");
 
     std::cout << "multiplePriceLevelTest() passed!\n";
 }

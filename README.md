@@ -79,12 +79,12 @@ Note: Each run yields varied results so these observations are approximate avera
 ## Project Tree
 ```bash
 Limit-Order-Book/
-├── Order Book/            * Core order book implementation
+├── Order_Book/            * Core order book implementation
 │   ├── Order.cpp
 │   ├── Order.h
 │   ├── OrderBook.cpp
 │   └── OrderBook.h
-├── Order Generator/       * Market simulation & order flow generation
+├── Order_Generator/       * Market simulation & order flow generation
 │   ├── MarkovParetoOrderGenerator.cpp
 │   └── MarkovParetoOrderGenerator.h
 ├── Testing/               * Unit tests and benchmarking tools

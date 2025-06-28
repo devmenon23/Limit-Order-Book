@@ -1,38 +1,32 @@
 #include "OrderBook.h"
 
 void OrderBook::addOrder(const OrderPointer& order) {
-    if (order->getSide() == Side::BUY) {
-        // Check if there is a list of the appropriate price level otherwise add a list
-        if (!bids.contains(order->getPrice())) {
-            PriceLevelPointer priceLevel = std::make_shared<PriceLevel>();
-            priceLevel->price = order->getPrice();
-            bids.insert(std::make_pair(order->getPrice(), priceLevel));
-
-            if (highestBidLevel == nullptr || priceLevel->price > highestBidLevel->price) {
-                highestBidLevel = priceLevel;
+    switch (order->getSide()) {
+        case Side::BUY: {
+            // Check if there is a list of the appropriate price level otherwise add a list
+            if (!bids.contains(order->getPrice())) {
+                PriceLevelPointer newPriceLevel = std::make_shared<PriceLevel>();
+                newPriceLevel->price = order->getPrice();
+                bids.insert(std::make_pair(order->getPrice(), newPriceLevel));
             }
+            const PriceLevelPointer priceLevel = bids[order->getPrice()];
+            const auto it = priceLevel->orders.insert(priceLevel->orders.end(), order);
+            priceLevel->orderIters[order->getIDNumber()] = it;
+            break;
         }
-        const PriceLevelPointer priceLevel = bids[order->getPrice()];
-        const auto it = priceLevel->orders.insert(priceLevel->orders.end(), order);
-        priceLevel->orderIters[order->getIDNumber()] = it;
-    }
-
-    else if (order->getSide() == Side::SELL) {
-        // Check if there is a list of the appropriate price level otherwise add a list
-        if (!asks.contains(order->getPrice())) {
-            PriceLevelPointer priceLevel = std::make_shared<PriceLevel>();
-            priceLevel->price = order->getPrice();
-            asks.insert(std::make_pair(order->getPrice(), priceLevel));
-
-            if (lowestAskLevel == nullptr || priceLevel->price > lowestAskLevel->price) {
-                lowestAskLevel = priceLevel;
+        case Side::SELL: {
+            // Check if there is a list of the appropriate price level otherwise add a list
+            if (!asks.contains(order->getPrice())) {
+                PriceLevelPointer newPriceLevel = std::make_shared<PriceLevel>();
+                newPriceLevel->price = order->getPrice();
+                asks.insert(std::make_pair(order->getPrice(), newPriceLevel));
             }
+            const PriceLevelPointer priceLevel = asks[order->getPrice()];
+            const auto it = priceLevel->orders.insert(priceLevel->orders.end(), order);
+            priceLevel->orderIters[order->getIDNumber()] = it;
+            break;
         }
-        const PriceLevelPointer priceLevel = asks[order->getPrice()];
-        const auto it = priceLevel->orders.insert(priceLevel->orders.end(), order);
-        priceLevel->orderIters[order->getIDNumber()] = it;
     }
-
     orders[order->getIDNumber()] = order;
 }
 
@@ -70,10 +64,6 @@ void OrderBook::cancelOrder(const std::uint64_t idNumber) {
 
         if (priceLevel->orders.empty()) {
             bids.erase(priceLevel->price);
-            // If removed price level was the highest bid level, then update the highest bid level pointer
-            if (!bids.empty() && highestBidLevel->price == priceLevel->price) {
-                highestBidLevel = bids.begin()->second;
-            }
         }
     }
 
@@ -85,18 +75,22 @@ void OrderBook::cancelOrder(const std::uint64_t idNumber) {
 
         if (priceLevel->orders.empty()) {
             asks.erase(priceLevel->price);
-            // If removed price level was the lowest ask level, then update the lowest ask level pointer
-            if (!asks.empty() && lowestAskLevel->price == priceLevel->price) {
-                lowestAskLevel = asks.begin()->second;
-            }
         }
     }
 }
 
 void OrderBook::matchOrders() {
+    PriceLevelPointer highestBidLevel;
+    PriceLevelPointer lowestAskLevel;
+
+    if (!bids.empty() && !asks.empty()) {
+        highestBidLevel = bids.begin()->second;
+        lowestAskLevel = asks.begin()->second;
+    }
+
     while (highestBidLevel && lowestAskLevel &&
-       !highestBidLevel->orders.empty() && !lowestAskLevel->orders.empty() &&
-       highestBidLevel->price >= lowestAskLevel->price) {
+           !highestBidLevel->orders.empty() && !lowestAskLevel->orders.empty() &&
+           highestBidLevel->price >= lowestAskLevel->price) {
         const OrderPointer highestBidOrder = highestBidLevel->orders.front();
         const OrderPointer lowestAskOrder = lowestAskLevel->orders.front();
 

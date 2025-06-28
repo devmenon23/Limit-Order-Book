@@ -4,9 +4,6 @@
 #include <map>
 #include <unordered_map>
 
-#include "OrderBook.h"
-#include "OrderBook.h"
-
 /**
  * @brief Represents a price level in the order book which contains all 
  * orders at a specific price according to time priority
@@ -24,12 +21,9 @@ using PriceLevelPointer = std::shared_ptr<PriceLevel>;
  */
 class OrderBook {
 private:
-    std::unordered_map<std::uint32_t, PriceLevelPointer> bids;
-    std::unordered_map<std::uint32_t, PriceLevelPointer> asks;
+    std::map<std::uint32_t, PriceLevelPointer, std::greater<>> bids; // sorted descending
+    std::map<std::uint32_t, PriceLevelPointer> asks; // sorted ascending
     std::unordered_map<std::uint64_t, OrderPointer> orders; // to get orders by id
-
-    PriceLevelPointer highestBidLevel;
-    PriceLevelPointer lowestAskLevel;
 
 public:
     /**

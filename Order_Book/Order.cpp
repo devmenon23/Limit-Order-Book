@@ -23,11 +23,11 @@ void Order::fill(const std::uint32_t qty) {
         throw std::invalid_argument("Order ('" + std::to_string(idNumber) + "') cannot be filled for more than its current remaining quantity");
     }
 
-        remainingQuantity -= qty;
-        if (remainingQuantity == 0) {
-            status = Status::COMPLETELY_FILLED;
-        }
-        else if (remainingQuantity < getInitialQuantity()) {
-            status = Status::PARTIALLY_FILLED;
-        }
+    remainingQuantity -= qty;
+    if (remainingQuantity == 0) {
+        status = Status::COMPLETELY_FILLED;
+    }
+    else if (remainingQuantity < getInitialQuantity()) {
+        status = Status::PARTIALLY_FILLED;
+    }
 }
