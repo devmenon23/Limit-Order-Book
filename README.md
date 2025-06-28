@@ -1,5 +1,5 @@
 # Limit-Order-Book
-This Limit Order Book (LOB) is a high-performance, configurable implementation in modern C++. It is able to execute over **2,660,000 orders per second** and perform over **1,260,000 general operations per second**. The LOB's primary goal is to provide a robust core data structure for electronic trading systems, HFT, and quantitative research with a focus on **efficiency, accuracy, and maintainability**.
+This Limit Order Book (LOB) is a high-performance, configurable implementation in modern C++. It is able to execute over **2,440,000 orders per second** and perform over **870,000 general operations per second**. The LOB's primary goal is to provide a robust core data structure for electronic trading systems, HFT, and quantitative research with a focus on **efficiency, accuracy, and maintainability**.
 
 Benchmarking the performance of the Order Book was challenging, as realistic results require realistic data. For this, I implemented a market simulation using a **Markov chain and Pareto process** to generate synthetic but market-like order flow, which enables automated and realistic benchmarking.
 
@@ -40,7 +40,7 @@ class OrderBook
     PriceLevelPointer lowestAskLevel;
 ```
 
-The system maintains two unordered maps: ```bids``` and ```asks```. When a new order is added, it is inserted into the correct price level within either the bids or asks map, depending on whether it is a buy or sell order. The top-of-book highest bid level and lowest ask level are tracked as member fields with each operation. Orders within each price level are stored in a doubly-linked list. This preserves their arrival sequence to ensure **time priority** at each price. It also allows O(1) order removal. Each order can be quickly retrieved by its unique ```idNumber``` through the ```orders``` unordered map, which allows for O(1) lookup during modifications or cancellations.
+The system maintains two maps: ```bids``` and ```asks```. This allows the efficient ordering of price levels to find highest bids and lowest asks. When a new order is added, it is inserted into the correct price level within either the bids or asks map, depending on whether it is a buy or sell order. Orders within each price level are stored in a doubly-linked list. This preserves their arrival sequence to ensure **time priority** at each price. It also allows O(1) order removal. Each order can be quickly retrieved by its unique ```idNumber``` through the ```orders``` unordered map, which allows for O(1) lookup during modifications or cancellations.
 
 ### Matching Logic
 Buy Orders: When a new buy order arrives, the engine checks if there are any sell orders (asks) at a price less than or equal to the buy price.
@@ -59,12 +59,12 @@ N = number of orders in a price level\
 M = number of price levels\
 P = Number of price levels swept during matching (often <<M in practice)
 
-| Function                   | Average Case    | Worst Case      |
-| -------------------------- | --------------- | --------------- |
-| Add Order                  | O(1)            | O(1)            |
-| Modify Order               | O(1)            | O(1)            |
-| Cancel Order               | O(1)            | O(1)            |
-| Match Orders               | O(1) per match  | O(P × N)        |
+| Function         | Average Case        | Worst Case          |
+|------------------|---------------------|---------------------|
+| Add Order        | O(1)                | O(log M)            |
+| Modify Order     | O(1)                | O(log M)            |
+| Cancel Order     | O(1)                | O(log M)            |
+| Match Orders     | O(1) per match      | O(P × N)            |
 
 
 ## Benchmarking and Testing
@@ -72,19 +72,19 @@ P = Number of price levels swept during matching (often <<M in practice)
 In order to benchmark the LOB, it is neccessary to simulate the market order flow to ensure the benchmarking times are realistic. I utilized a Markov chain to model shifting market states (neutral, buy pressure, and sell pressure) so that the probability of generating buy or sell orders realistically adapts over time. For each simulated order, the generator samples the next market state, then decides the order side (buy or sell) accordingly. Order prices and sizes are sampled from Pareto distributions, producing the heavy-tailed, bursty behavior observed in real-world order books. This results in a realistic, dynamic stream of limit and market orders that stress-test the engine under authentic trading conditions.
 
 ### Latency Results
-Processing 5,000,000 order insertions resulted in an average total elapsed time of 1.88 seconds, yielding a throughput of 2,660,000 orders per second. For a mixed workload of 5,000,000 general operations, including adds, cancels, and modifies, the average elapsed time was 3.98 seconds, corresponding to a throughput of 1,260,000 operations per second. These results highlight the engine’s ability to maintain ultra-low latency and high throughput under realistic, high-frequency trading conditions.
+Processing 5,000,000 order insertions resulted in an average total elapsed time of 2.05 seconds, yielding a throughput of 2,440,000 orders per second. For a mixed workload of 5,000,000 general operations, including adds, cancels, and modifies, the average elapsed time was 5.72 seconds, corresponding to a throughput of 870,000 operations per second. These results highlight the engine’s ability to maintain ultra-low latency and high throughput under realistic, high-frequency trading conditions.
 
 Note: Each run yields varied results so these observations are approximate averages.
 
 ## Project Tree
 ```bash
 Limit-Order-Book/
-├── Order_Book/            * Core order book implementation
+├── Order Book/            * Core order book implementation
 │   ├── Order.cpp
 │   ├── Order.h
 │   ├── OrderBook.cpp
 │   └── OrderBook.h
-├── Order_Generator/       * Market simulation & order flow generation
+├── Order Generator/       * Market simulation & order flow generation
 │   ├── MarkovParetoOrderGenerator.cpp
 │   └── MarkovParetoOrderGenerator.h
 ├── Testing/               * Unit tests and benchmarking tools
