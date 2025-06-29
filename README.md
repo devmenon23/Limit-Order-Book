@@ -40,7 +40,7 @@ class OrderBook
     PriceLevelPointer lowestAskLevel;
 ```
 
-The system maintains two maps: ```bids``` and ```asks```. This allows the efficient ordering of price levels to find highest bids and lowest asks. When a new order is added, it is inserted into the correct price level within either the bids or asks map, depending on whether it is a buy or sell order. Orders within each price level are stored in a doubly-linked list. This preserves their arrival sequence to ensure **time priority** at each price. It also allows O(1) order removal. Each order can be quickly retrieved by its unique ```idNumber``` through the ```orders``` unordered map, which allows for O(1) lookup during modifications or cancellations.
+The system maintains two maps: ```bids``` and ```asks```. This allows the efficient ordering of price levels to find highest bids and lowest asks. The price levels are ordered by its price property that is represented in cents as a 32 bit int. When a new order is added, it is inserted into the correct price level within either the bids or asks map, depending on whether it is a buy or sell order. Orders within each price level are stored in a doubly-linked list. This preserves their arrival sequence to ensure **time priority** at each price. It also allows O(1) order removal. Each order can be quickly retrieved by its unique ```idNumber``` through the ```orders``` unordered map, which allows for O(1) lookup during modifications or cancellations.
 
 ### Matching Logic
 Buy Orders: When a new buy order arrives, the engine checks if there are any sell orders (asks) at a price less than or equal to the buy price.
