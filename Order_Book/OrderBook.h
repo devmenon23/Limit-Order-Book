@@ -9,9 +9,9 @@
  * orders at a specific price according to time priority
  */
 struct PriceLevel {
-    std::uint16_t price;
+    Price price;
     std::list<OrderPointer>orders; // FIFO by time priority at a certain price level but implemented as doubly-linked list because ability to iterate is required
-    std::unordered_map<std::uint64_t, std::list<OrderPointer>::iterator> orderIters;
+    std::unordered_map<IdNumber, std::list<OrderPointer>::iterator> orderIters;
 };
 
 using PriceLevelPointer = std::shared_ptr<PriceLevel>;
@@ -21,9 +21,9 @@ using PriceLevelPointer = std::shared_ptr<PriceLevel>;
  */
 class OrderBook {
 private:
-    std::map<std::uint32_t, PriceLevelPointer, std::greater<>> bids; // sorted descending
-    std::map<std::uint32_t, PriceLevelPointer> asks; // sorted ascending
-    std::unordered_map<std::uint64_t, OrderPointer> orders; // to get orders by id
+    std::map<Price, PriceLevelPointer, std::greater<>> bids; // sorted descending
+    std::map<Price, PriceLevelPointer> asks; // sorted ascending
+    std::unordered_map<IdNumber, OrderPointer> orders; // to get orders by id
 
 public:
     /**
@@ -41,13 +41,13 @@ public:
      *
      * @return A shared pointer to the modified order
      */
-    OrderPointer modifyOrder(std::uint64_t idNumber, std::uint32_t newPrice, std::uint32_t newQty);
+    OrderPointer modifyOrder(IdNumber idNumber, Price newPrice, Quantity newQty);
     /**
      * @brief Cancels the order related to the specified id number
      * 
      * @param idNumber The id number of the order to be canceled
      */
-    void cancelOrder(std::uint64_t idNumber);
+    void cancelOrder(IdNumber idNumber);
     /**
      * @brief Matches buy and sell orders in the order book according to
      * price-time priority
@@ -62,7 +62,7 @@ public:
      *
      * @return A shared pointer to the modified order
      */
-    OrderPointer getOrderByID(std::uint64_t idNumber);
+    OrderPointer getOrderByID(IdNumber idNumber);
     /**
      * @brief Retrieves the total number of orders in the order book
      *

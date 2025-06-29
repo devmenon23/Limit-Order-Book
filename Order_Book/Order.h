@@ -17,16 +17,20 @@ enum class Status {
     COMPLETELY_FILLED
 };
 
+using IdNumber = std::uint64_t;
+using Price = std::uint32_t;
+using Quantity = std::uint32_t;
+
 /**
  * @brief Represents an order in the market
  */
 class Order {
 private:
-    std::uint64_t idNumber;
+    IdNumber idNumber;
     Side side;
-    std::uint32_t price;
-    std::uint32_t initialQuantity;
-    std::uint32_t remainingQuantity;
+    Price price;
+    Quantity initialQuantity;
+    Quantity remainingQuantity;
     Status status;
 public:
     /**
@@ -37,14 +41,14 @@ public:
      * @param price The price of the order
      * @param qty The quantity of shares of the order
      */
-    Order(std::uint64_t id, Side side, std::uint32_t price, std::uint32_t qty);
+    Order(IdNumber id, Side side, Price price, Quantity qty);
 
     /**
      * @brief Retrieves the id number of the order
      * 
      * @return The order's id
      */
-    std::uint64_t getIDNumber() const;
+    IdNumber getIDNumber() const;
     /**
      * @brief Retrieves the side of the order
      * 
@@ -56,25 +60,25 @@ public:
      * 
      * @return The order's price
      */
-    std::uint32_t getPrice() const;
+    Price getPrice() const;
     /**
      * @brief Retrieves the initial quantity of the order
      * 
      * @return The order's initial quantity
      */
-    std::uint32_t getInitialQuantity() const;
+    Quantity getInitialQuantity() const;
     /**
      * @brief Retrieves the remaining quantity of the order
      * 
      * @return The order's remaining quantity
      */
-    std::uint32_t getRemainingQuantity() const;
+    Quantity getRemainingQuantity() const;
     /**
      * @brief Retrieves the filled quantity of the order
      * 
      * @return The order's filled quantity
      */
-    std::uint32_t getFilledQuantity() const;
+    Quantity getFilledQuantity() const;
     /**
      * @brief Retrieves the status of the order
      * 

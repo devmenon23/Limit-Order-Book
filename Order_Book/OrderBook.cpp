@@ -30,7 +30,7 @@ void OrderBook::addOrder(const OrderPointer& order) {
     orders[order->getIDNumber()] = order;
 }
 
-OrderPointer OrderBook::modifyOrder(std::uint64_t idNumber, std::uint32_t newPrice, std::uint32_t newQty) {
+OrderPointer OrderBook::modifyOrder(IdNumber idNumber, Price newPrice, Quantity newQty) {
     if (!orders.contains(idNumber)) {
         throw std::logic_error("Order('" + std::to_string(idNumber) + "') does not exist");
     }
@@ -45,7 +45,7 @@ OrderPointer OrderBook::modifyOrder(std::uint64_t idNumber, std::uint32_t newPri
     return order;
 }
 
-void OrderBook::cancelOrder(const std::uint64_t idNumber) {
+void OrderBook::cancelOrder(const IdNumber idNumber) {
     if (!orders.contains(idNumber)) {
         throw std::logic_error("Order ('" + std::to_string(idNumber) + "') does not exist or was completely filled");
     }
@@ -95,13 +95,13 @@ void OrderBook::matchOrders() {
         const OrderPointer lowestAskOrder = lowestAskLevel->orders.front();
 
         // Fill orders based on remaining quantity differences
-        const std::uint64_t qty = std::min(highestBidOrder->getRemainingQuantity(), lowestAskOrder->getRemainingQuantity());
+        const Quantity qty = std::min(highestBidOrder->getRemainingQuantity(), lowestAskOrder->getRemainingQuantity());
         highestBidOrder->fill(qty);
         lowestAskOrder->fill(qty);
 
         // Remove filled order and update pointers as needed
         if (highestBidOrder->getRemainingQuantity() == 0) {
-            std::uint64_t idNumber = highestBidOrder->getIDNumber();
+            IdNumber idNumber = highestBidOrder->getIDNumber();
             highestBidLevel->orders.pop_front();
             highestBidLevel->orderIters.erase(idNumber);
             orders.erase(idNumber);
@@ -117,7 +117,7 @@ void OrderBook::matchOrders() {
             }
         }
         if (lowestAskOrder->getRemainingQuantity() == 0) {
-            std::uint64_t idNumber = lowestAskOrder->getIDNumber();
+            IdNumber idNumber = lowestAskOrder->getIDNumber();
             lowestAskLevel->orders.pop_front();
             lowestAskLevel->orderIters.erase(idNumber);
             orders.erase(idNumber);
@@ -135,7 +135,7 @@ void OrderBook::matchOrders() {
     }
 }
 
-OrderPointer OrderBook::getOrderByID(const std::uint64_t idNumber) {
+OrderPointer OrderBook::getOrderByID(const IdNumber idNumber) {
     if (!orders.contains(idNumber)) {
         throw std::logic_error("Order ('" + std::to_string(idNumber) + "') does not exist");
     }
