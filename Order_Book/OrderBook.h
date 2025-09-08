@@ -10,7 +10,7 @@
  */
 struct PriceLevel {
     Price price;
-    std::list<OrderPointer>orders; // FIFO by time priority at a certain price level but implemented as doubly-linked list because ability to iterate is required
+    std::list<OrderPointer> orders; // FIFO by time priority at a certain price level but implemented as doubly-linked list because ability to iterate is required
     std::unordered_map<IdNumber, std::list<OrderPointer>::iterator> orderIters;
 };
 

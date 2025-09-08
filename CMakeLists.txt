@@ -13,4 +13,7 @@ add_executable(Limit_Order_Book
         "Order_Book/Order.cpp"
         "Order_Book/OrderBook.cpp"
         "Testing/OrderBookTests.cpp"
+        "Concurrency Safety/EngineCommand.h"
+        "Concurrency Safety/BoundedQueue.h"
+        "Concurrency Safety/BoundedQueue.cpp"
 )
