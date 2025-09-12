@@ -1,5 +1,4 @@
 #pragma once
-#include "Order_Book/Order.h"
 #include "EngineCommand.h"
 #include <mutex>
 #include <condition_variable>
@@ -17,8 +16,6 @@ public:
     explicit BoundedQueue(size_t capacity);
 
     void push(const Command& command);
-
-    bool try_push(const Command& command);
 
     bool pop(Command& out);
 
