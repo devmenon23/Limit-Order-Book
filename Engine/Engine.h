@@ -4,7 +4,6 @@
 #include "Order_Book/OrderBook.h"
 #include <atomic>
 #include <thread>
-#include <cmath>
 
 struct TopOfBook {
     Price bestBidPrice = 0;
@@ -19,7 +18,7 @@ private:
     std::thread engineThread;
 
     std::atomic<SeqNum> nextSeq;
-    BoundedQueue<Command> queue;
+    BoundedQueue queue;
     OrderBook book;
 
     void run();
@@ -27,7 +26,7 @@ private:
     void matchIfNeeded();
 
 public:
-    explicit Engine(size_t queueCapacity = pow(2, 16));
+    explicit Engine(size_t queueCapacity = 1 << 16);
 
     ~Engine();
 
