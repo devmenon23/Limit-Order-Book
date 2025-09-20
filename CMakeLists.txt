@@ -7,13 +7,16 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -DNDEBUG")
 
 include_directories(.)
 
+find_package(OpenMP REQUIRED)
 
 add_executable(Limit_Order_Book
         "Order_Generator/MarkovParetoOrderGenerator.cpp"
         "Order_Book/Order.cpp"
         "Order_Book/OrderBook.cpp"
         "Testing/OrderBookTests.cpp"
-        "Concurrency Safety/EngineCommand.h"
-        "Concurrency Safety/BoundedQueue.h"
-        "Concurrency Safety/BoundedQueue.cpp"
+        "Engine/EngineCommand.h"
+        "Engine/BoundedQueue.h"
+        "Engine/BoundedQueue.cpp"
+        "Engine/Engine.h"
+        "Engine/Engine.cpp"
 )

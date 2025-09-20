@@ -3,7 +3,9 @@
 Engine::Engine(size_t queueCapacity):
     queue(queueCapacity),
     running(false),
-    nextSeq(1)
+    nextSeq(1),
+    lastAppliedSeq(0),
+    pending(0)
 {}
 
 Engine::~Engine() { stop(); }
@@ -36,8 +38,18 @@ void Engine::run() {
         if (!queue.pop(cmd)) {
             break;
         }
-        apply(cmd);
-        matchIfNeeded();
+        try {
+            apply(cmd);
+            if (++pending >= BATCH) {
+                matchIfNeeded();
+                pending = 0;
+            }
+            lastAppliedSeq.store(cmd.seqNum, std::memory_order_release);
+        } catch (const std::exception& e) {
+            if (onError) { onError(cmd, e); }
+            lastAppliedSeq.store(cmd.seqNum, std::memory_order_release);
+        }
+
     }
 }
 
@@ -59,4 +71,10 @@ SeqNum Engine::submit(Command cmd) {
     queue.push(cmd);
     return cmd.seqNum;
 }
+
+const OrderBook& Engine::getBook() const { return book; }
+
+SeqNum Engine::lastProcessed() const { return lastAppliedSeq.load(); }
+
+void Engine::set_error_handler(ErrorHandler f) { onError = std::move(f); }
 

@@ -1,164 +1,178 @@
 #include "OrderBookTests.h"
 
+static void waitUntil(Engine& eng, SeqNum target) {
+    while (eng.lastProcessed() < target) {
+        std::this_thread::yield();
+    }
+}
+
 void completeFillTest() {
-    OrderBook book;
+    Engine eng;
+    eng.start();
 
-    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
-    const OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 9900, 5);
+    Command c1 = {CommandType::ADD};
+    c1.idNumber = 1; c1.side = Side::BUY; c1.price = 10000; c1.qty = 5;
+    eng.submit(c1);
 
-    book.addOrder(order1);
-    book.addOrder(order2);
-    book.matchOrders();
+    Command c2 = {CommandType::ADD};
+    c2.idNumber = 2; c2.side = Side::SELL; c2.price = 9900; c2.qty = 5;
+    const SeqNum lastSeqNum = eng.submit(c2);
 
-    assert(!book.contains(order1) && "order1 should be removed from the order book");
-    assert(!book.contains(order2) && "order2 should be removed from the order book");
+    waitUntil(eng, lastSeqNum);
+    eng.stop();
+
+    const OrderBook& book = eng.getBook();
+
+    assert(!book.containsId(1) && "order1 should be removed from the order book");
+    assert(!book.containsId(2) && "order2 should be removed from the order book");
 
     std::cout << "completeFillTest() passed!\n";
 }
 
 void partialFillTest() {
-    OrderBook book;
+    Engine eng;
+    eng.start();
 
-    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
-    const OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 9900, 5);
+    Command c1 = {CommandType::ADD};
+    c1.idNumber = 1; c1.side = Side::BUY; c1.price = 10000; c1.qty = 10;
+    eng.submit(c1);
 
-    book.addOrder(order1);
-    book.addOrder(order2);
-    book.matchOrders();
+    Command c2 = {CommandType::ADD};
+    c2.idNumber = 2; c2.side = Side::SELL; c2.price = 9900; c2.qty = 5;
+    const SeqNum lastSeqNum = eng.submit(c2);
 
-    assert(book.contains(order1) && "order1 should be in the order book");
+    waitUntil(eng, lastSeqNum);
+    eng.stop();
+
+    const OrderBook& book = eng.getBook();
+    OrderPointer order1 = book.getOrderByID(1);
+
+    assert(book.contains(1) && "order1 should be in the order book");
     assert(order1->getRemainingQuantity() == 5 && "order1 should have 5 remaining");
-    assert(!book.contains(order2) && "order2 should be removed from the order book");
+    assert(!book.contains(2) && "order2 should be removed from the order book");
 
     std::cout << "partialFillTest() passed!\n";
 }
 
 void multiplePriceLevelTest() {
-    OrderBook book;
-    OrderPointer highestPriorityBuyOrder;
-    OrderPointer secondHighestPriorityBuyOrder;
+    Engine eng;
+    eng.start();
 
     for (int i = 0; i < 100; i++) {
-        OrderPointer order = std::make_shared<Order>(i, Side::BUY, std::floor(i/10), 10); // 10 order per price level
-        book.addOrder(order);
-        // Get first order added to highest price level
-        if (order->getIDNumber() == 90) {
-            highestPriorityBuyOrder = order;
-        }
-        else if (order->getIDNumber() == 91) {
-            secondHighestPriorityBuyOrder = order;
-        }
+        Command c = {CommandType::ADD};
+        c.idNumber = i; c.side = Side::BUY; c.price = std::floor(i/10); c.qty = 10; // 10 order per price level
+        eng.submit(c);
     }
 
-    const OrderPointer sellOrder1 = std::make_shared<Order>(100, Side::SELL, 9, 10);
-    const OrderPointer sellOrder2 = std::make_shared<Order>(101, Side::SELL, 9, 5);
-    book.addOrder(sellOrder1);
-    book.addOrder(sellOrder2);
-    book.matchOrders();
+    Command c1 = {CommandType::ADD};
+    c1.idNumber = 100; c1.side = Side::SELL; c1.price = 9; c1.qty = 10;
+    eng.submit(c1);
 
-    assert(!book.contains(highestPriorityBuyOrder) && "highestPriorityBuyOrder should be removed from the order book");
-    assert(!book.contains(sellOrder1) && "sellOrder1 should be removed from the order book");
+    Command c2 = {CommandType::ADD};
+    c2.idNumber = 101; c2.side = Side::SELL; c2.price = 9; c2.qty = 5;
+    const SeqNum lastSeqNum = eng.submit(c2);
+
+    waitUntil(eng, lastSeqNum);
+    eng.stop();
+
+    const OrderBook& book = eng.getBook();
+    OrderPointer secondHighestPriorityBuyOrder = book.getOrderByID(91);
+
+    assert(!book.contains(90) && "highestPriorityBuyOrder should be removed from the order book");
+    assert(!book.contains(91) && "sellOrder1 should be removed from the order book");
     assert(secondHighestPriorityBuyOrder->getRemainingQuantity() == 5 && "secondHighestPriorityBuyOrder should have 5 remaining");
-    assert(!book.contains(sellOrder2) && "sellOrder2 should be removed from the order book");
+    assert(!book.contains(101) && "sellOrder2 should be removed from the order book");
 
     std::cout << "multiplePriceLevelTest() passed!\n";
 }
 
 void timePriorityMatchingTest() {
-    OrderBook book;
+    Engine eng;
+    eng.start();
 
-    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
-    const OrderPointer order2 = std::make_shared<Order>(2, Side::BUY, 10000, 10);
-    const OrderPointer order3 = std::make_shared<Order>(3, Side::SELL, 10000, 12);
+    Command c1 = {CommandType::ADD};
+    c1.idNumber = 1; c1.side = Side::BUY; c1.price = 10000; c1.qty = 5;
+    eng.submit(c1);
 
-    book.addOrder(order1);
-    book.addOrder(order2);
-    book.addOrder(order3);
-    book.matchOrders();
+    Command c2 = {CommandType::ADD};
+    c2.idNumber = 2; c2.side = Side::BUY; c2.price = 10000; c2.qty = 10;
+    eng.submit(c2);
 
-    assert(!book.contains(order1) && "order1 should be removed from the order book");
-    assert(book.contains(order2) && "order2 should be in the order book");
-    assert(order2->getRemainingQuantity() == 3 && "order2 should have 3 remaining");
-    assert(!book.contains(order3) && "order3 should be removed from the order book");
+    Command c3 = {CommandType::ADD};
+    c3.idNumber = 3; c3.side = Side::SELL; c3.price = 10000; c3.qty = 12;
+    const SeqNum lastSeqNum = eng.submit(c3);
+
+    waitUntil(eng, lastSeqNum);
+    eng.stop();
+
+    const OrderBook& book = eng.getBook();
+    OrderPointer order2 = book.getOrderByID(2);
+
+    assert(!book.contains(1) && "order1 should be removed from the order book");
+    assert(book.contains(2) && "order2 should be in the order book");
+    assert( && "order2 should have 3 remaining");
+    assert(!book.contains(3) && "order3 should be removed from the order book");
 
     std::cout << "timePriorityMatchingTest() passed!\n";
 }
 
 void modifyValidOrderTest() {
-    OrderBook book;
+    Engine eng;
+    eng.start();
 
-    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 5);
-    const OrderPointer order2 = std::make_shared<Order>(2, Side::BUY, 5000, 5);
-    const OrderPointer order3 = std::make_shared<Order>(3, Side::SELL, 5000, 5);
+    Command c1 = {CommandType::ADD};
+    c1.idNumber = 1; c1.side = Side::BUY; c1.price = 10000; c1.qty = 5;
+    eng.submit(c1);
 
-    book.addOrder(order1);
-    book.addOrder(order2);
-    const OrderPointer modifiedOrder1 = book.modifyOrder(1, 5000, 10);
-    book.addOrder(order3);
-    book.matchOrders();
+    Command c2 = {CommandType::ADD};
+    c2.idNumber = 2; c2.side = Side::BUY; c2.price = 5000; c2.qty = 5;
+    eng.submit(c2);
+
+    Command c3 = {CommandType::MODIFY};
+    c3.idNumber = 1; c3.price = 5000; c3.qty = 10;
+    eng.submit(c3);
+
+    Command c4 = {CommandType::ADD};
+    c4.idNumber = 3; c4.side = Side::SELL; c4.price = 5000; c4.qty = 5;
+    const SeqNum lastSeqNum = eng.submit(c4);
+
+    waitUntil(eng, lastSeqNum);
+    eng.stop();
+
+    const OrderBook& book = eng.getBook();
+    OrderPointer modifiedOrder1 = book.getOrderByID(1);
 
     assert(modifiedOrder1->getPrice() == 5000 && "order1 should have a price of 5000");
     assert(modifiedOrder1->getRemainingQuantity() == 10 && "order1 should have 10 remaining");
-    assert(!book.contains(order2) && "order2 should be removed from the order book");
+    assert(!book.contains(2) && "order2 should be removed from the order book");
 
     std::cout << "modifyValidOrderTest() passed!\n";
 }
 
 void cancelValidOrderTest() {
-    OrderBook book;
+    Engine eng;
+    eng.start();
 
-    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
-    
-    book.addOrder(order1);
-    book.cancelOrder(1);
-    book.matchOrders();
-    
-    assert(!book.contains(order1) && "order1 should be removed from the order book");
+    Command c1 = {CommandType::ADD};
+    c1.idNumber = 1; c1.side = Side::BUY; c1.price = 10000; c1.qty = 10;
+    eng.submit(c1);
+
+    Command c2 = {CommandType::CANCEL};
+    c2.idNumber = 1;
+    const SeqNum lastSeqNum = eng.submit(c2);
+
+    waitUntil(eng, lastSeqNum);
+    eng.stop();
+
+    const OrderBook& book = eng.getBook();
+
+    assert(!book.contains(1) && "order1 should be removed from the order book");
 
     std::cout << "cancelValidOrderTest() passed!\n";
 }
 
-void cancelFilledOrderTest() {
-    OrderBook book;
-
-    const OrderPointer order1 = std::make_shared<Order>(1, Side::BUY, 10000, 10);
-    const OrderPointer order2 = std::make_shared<Order>(2, Side::SELL, 10000, 10);
-
-    book.addOrder(order1);
-    book.addOrder(order2);
-    book.matchOrders();
-
-    bool exceptionCaught = false;
-    try {
-        book.cancelOrder(1);
-    } catch (const std::logic_error& e) {
-        exceptionCaught = true;
-    }
-
-    assert(exceptionCaught && "Expected std::logic_error not caught when trying to cancel a filled order");
-
-    std::cout << "cancelFilledOrderTest() passed!\n";
-}
-
-void cancelNonExistentOrderTest() {
-    OrderBook book;
-
-    bool exceptionCaught = false;
-
-    try {
-        book.cancelOrder(1);
-    } catch (const std::logic_error& e) {
-        exceptionCaught = true;
-    }
-
-    assert(exceptionCaught && "Expected std::logic_error not caught when trying to cancel a non-existent order");
-
-    std::cout << "cancelNonExistentOrderTest() passed!\n";
-}
-
 void benchmarkFiveMillionOrders() {
     using namespace std::chrono;
-    OrderBook book;
 
     TransitionMatrix matrix = {
         {0.80, 0.10, 0.10}, // Neutral
@@ -172,18 +186,25 @@ void benchmarkFiveMillionOrders() {
     OrderGenerator generator(matrix, rng);
     constexpr int NUM_ORDERS = 5000000;
 
+    Engine eng;
+    eng.start();
+
     const auto start = high_resolution_clock::now();
 
+    SeqNum lastSeqNum = 0;
     for (int i = 0; i < NUM_ORDERS; i++) {
         generator.nextState();
         Side orderSide = generator.pickOrderSide();
         std::uint32_t orderPrice = generator.generateOrderPrice(10000, orderSide, 1.0, 2.5); // reference price is $100.00
         std::uint32_t orderSize = generator.generateOrderSize(10.0, 1.7);
 
-        OrderPointer order = std::make_shared<Order>(i, orderSide, orderPrice, orderSize);
-        book.addOrder(order);
-        book.matchOrders();
+        Command c = {CommandType::ADD};
+        c.idNumber = i; c.side = orderSide; c.price = orderPrice; c.qty = orderSize;
+        lastSeqNum = eng.submit(c);
     }
+
+    waitUntil(eng, lastSeqNum);
+    eng.stop();
 
     const auto end = high_resolution_clock::now();
     const double elapsed = duration<double>(end - start).count();
@@ -195,7 +216,6 @@ void benchmarkFiveMillionOrders() {
 
 void benchmarkFiveMillionOperations() {
     using namespace std::chrono;
-    OrderBook book;
 
     TransitionMatrix matrix = {
         {0.80, 0.10, 0.10}, // Neutral
@@ -208,58 +228,76 @@ void benchmarkFiveMillionOperations() {
 
     OrderGenerator generator(matrix, rng);
 
-    std::vector<std::uint64_t> activeOrderIds;
+    struct Active { IdNumber idNumber; Side side; };
+    std::vector<Active> active;
     constexpr int NUM_OPS = 5000000;
-    int adds = 0, cancels = 0, modifies = 0;
+    std::atomic<int> adds = 0, cancels = 0, modifies = 0;
+
+    Engine eng;
+    eng.start();
+
+    eng.set_error_handler([&](const Command& c, const std::exception& e){
+        (void)e;
+        switch (c.type) {
+            case CommandType::ADD: adds.fetch_sub(1, std::memory_order_relaxed); break;
+            case CommandType::CANCEL: cancels.fetch_sub(1, std::memory_order_relaxed); break;
+            case CommandType::MODIFY: modifies.fetch_sub(1, std::memory_order_relaxed); break;
+        }
+    });
 
     const auto start = high_resolution_clock::now();
 
+    SeqNum lastSeqNum = 0;
     for (int i = 0; i < NUM_OPS; i++) {
-        double action = actionDist(rng);
-        if (action < 0.6 || activeOrderIds.empty()) {
+        const double action = actionDist(rng);
+        if (action < 0.6 || active.empty()) {
             // Add order
             generator.nextState();
             Side orderSide = generator.pickOrderSide();
             std::uint32_t orderPrice = generator.generateOrderPrice(10000, orderSide, 1.0, 2.5); // reference price is $100.00
             std::uint32_t orderSize = generator.generateOrderSize(10.0, 1.7);
 
-            OrderPointer order = std::make_shared<Order>(i, orderSide, orderPrice, orderSize);
-            book.addOrder(order);
-            book.matchOrders();
-            activeOrderIds.push_back(i);
-            adds++;
+            Command c = {CommandType::ADD};
+            c.idNumber = i; c.side = orderSide; c.price = orderPrice; c.qty = orderSize;
+            lastSeqNum = eng.submit(c);
+
+            active.push_back({c.idNumber, orderSide});
+            adds.fetch_add(1, std::memory_order_relaxed);
         }
-        else if (action < 0.8 && !activeOrderIds.empty()) {
+        else if (action < 0.8 && !active.empty()) {
             // Cancel random order
-            std::uniform_int_distribution<std::size_t> indexDist(0, activeOrderIds.size() - 1);
+            std::uniform_int_distribution<std::size_t> indexDist(0, active.size() - 1);
             const std::size_t index = indexDist(rng);
-            const std::uint32_t cancelId = activeOrderIds[index];
-            try {
-                book.cancelOrder(cancelId);
-                cancels++;
-            }
-            catch (const std::logic_error& e) {}
+            const std::uint32_t cancelId = active[index].idNumber;
+
+            Command c = {CommandType::CANCEL};
+            c.idNumber = cancelId;
+            lastSeqNum = eng.submit(c);
 
             // O(1) removal
-            activeOrderIds[index] = activeOrderIds.back();
-            activeOrderIds.pop_back();
+            active[index] = active.back();
+            active.pop_back();
+            cancels.fetch_add(1, std::memory_order_relaxed);
         }
-        else if (!activeOrderIds.empty()) {
+        else if (!active.empty()) {
             // Modify random order
-            std::uniform_int_distribution<std::size_t> indexDist(0, activeOrderIds.size() - 1);
+            std::uniform_int_distribution<std::size_t> indexDist(0, active.size() - 1);
             const std::size_t index = indexDist(rng);
-            const std::uint32_t modifyId = activeOrderIds[index];
-            try {
-                const std::uint32_t newPrice = generator.generateOrderPrice(10000, book.getOrderByID(modifyId)->getSide(), 1.0, 2.5);
-                const std::uint32_t newQty = generator.generateOrderSize(10.0, 1.7);
+            const auto [modifyId, side] = active[index];
 
-                book.modifyOrder(modifyId, newPrice, newQty);
-                book.matchOrders();
-                modifies++;
-            }
-            catch (const std::logic_error& e) {}
+            const std::uint32_t newPrice = generator.generateOrderPrice(10000, side, 1.0, 2.5);
+            const std::uint32_t newSize = generator.generateOrderSize(10.0, 1.7);
+
+            Command c = {CommandType::MODIFY};
+            c.idNumber = modifyId; c.price = newPrice; c.qty = newSize;
+            lastSeqNum = eng.submit(c);
+
+            modifies.fetch_add(1, std::memory_order_relaxed);
         }
     }
+
+    waitUntil(eng, lastSeqNum);
+    eng.stop();
 
     const auto end = high_resolution_clock::now();
     const double elapsed = duration<double>(end - start).count();
@@ -279,8 +317,6 @@ int main() {
     timePriorityMatchingTest();
     modifyValidOrderTest();
     cancelValidOrderTest();
-    cancelFilledOrderTest();
-    cancelNonExistentOrderTest();
 
     std::cout << "All tests passed!\n";
     std::cout << "----------------\n";

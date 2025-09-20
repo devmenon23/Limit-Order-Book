@@ -135,12 +135,12 @@ void OrderBook::matchOrders() {
     }
 }
 
-OrderPointer OrderBook::getOrderByID(const IdNumber idNumber) {
+OrderPointer OrderBook::getOrderByID(const IdNumber idNumber) const {
     if (!orders.contains(idNumber)) {
         throw std::logic_error("Order ('" + std::to_string(idNumber) + "') does not exist");
     }
 
-    return orders[idNumber];
+    return orders.at(idNumber);
 }
 
 std::size_t OrderBook::getNumberOfOrders() const {
@@ -148,7 +148,7 @@ std::size_t OrderBook::getNumberOfOrders() const {
 }
 
 
-bool OrderBook::contains(const OrderPointer& order) const {
-    return orders.contains(order->getIDNumber());;
+bool OrderBook::contains(const IdNumber idNumber) const {
+    return orders.contains(idNumber);;
 }
 

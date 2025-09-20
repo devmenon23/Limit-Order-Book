@@ -62,7 +62,7 @@ public:
      *
      * @return A shared pointer to the modified order
      */
-    OrderPointer getOrderByID(IdNumber idNumber);
+    OrderPointer getOrderByID(IdNumber idNumber) const;
     /**
      * @brief Retrieves the total number of orders in the order book
      *
@@ -74,7 +74,7 @@ public:
      *
      * @return If the order book contains order
      */
-    bool contains(const OrderPointer& order) const;
+    bool contains(IdNumber idNumber) const;
 };
 
 

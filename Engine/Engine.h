@@ -12,14 +12,21 @@ struct TopOfBook {
     Price bestAskQty = 0;
 };
 
+using ErrorHandler = std::function<void(const Command&, const std::exception&)>;
+
 class Engine {
 private:
     std::atomic<bool> running;
     std::thread engineThread;
 
     std::atomic<SeqNum> nextSeq;
+    std::atomic<SeqNum> lastAppliedSeq;
     BoundedQueue queue;
     OrderBook book;
+    static constexpr int BATCH = 30000;
+    int pending;
+
+    ErrorHandler onError;
 
     void run();
     void apply(const Command& cmd);
@@ -35,5 +42,11 @@ public:
     void stop();
 
     SeqNum submit(Command cmd);
+
+    const OrderBook& getBook() const;
+
+    SeqNum lastProcessed() const;
+
+    void set_error_handler(ErrorHandler f);
 };
 

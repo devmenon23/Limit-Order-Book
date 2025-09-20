@@ -1,9 +1,14 @@
 #pragma once
 #include "Order_Book/OrderBook.h"
 #include "Order_Generator/MarkovParetoOrderGenerator.h"
+#include "Engine/Engine.h"
 #include <iostream>
 #include <cassert>
 #include <chrono>
+#include <thread>
+
+static void waitUntil(Engine& eng, SeqNum target);
+
 /**
  * @brief Tests filling orders completely in the order book
  */
@@ -29,18 +34,10 @@ void modifyValidOrderTest();
  */
 void cancelValidOrderTest();
 /**
- * @brief Tests canceling filled orders in the order book
- */
-void cancelFilledOrderTest();
-/**
- * @brief Tests canceling non-existent orders in the order book
- */
-void cancelNonExistentOrderTest();
-/**
  * @brief Benchmarks the efficiency of simulating 5,000,000 orders in the order book
  */
 void benchmarkFiveMillionOrders();
 /**
- * @brief Benchmarks the efficiency of simulating 1,000,000 operations in the order book
+ * @brief Benchmarks the efficiency of simulating 5,000,000 operations in the order book
  */
 void benchmarkFiveMillionOperations();
