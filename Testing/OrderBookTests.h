@@ -34,10 +34,10 @@ void modifyValidOrderTest();
  */
 void cancelValidOrderTest();
 /**
- * @brief Benchmarks the efficiency of simulating 5,000,000 orders in the order book
+ * @brief Benchmarks the efficiency of simulating 5,000,000 nonconcurrent orders in the order book
  */
 void benchmarkFiveMillionOrders();
 /**
- * @brief Benchmarks the efficiency of simulating 5,000,000 operations in the order book
+ * @brief Benchmarks the efficiency of simulating 5,000,000 nonconcurrent operations in the order book
  */
 void benchmarkFiveMillionOperations();

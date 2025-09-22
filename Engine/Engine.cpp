@@ -40,7 +40,8 @@ void Engine::run() {
         }
         try {
             apply(cmd);
-            if (++pending >= BATCH) {
+            // Match if pending is more than the BATCH threshold or if the queue is empty
+            if (++pending >= BATCH || queue.isEmpty()) {
                 matchIfNeeded();
                 pending = 0;
             }

@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+
 /**
  * @brief Both order sides
  */

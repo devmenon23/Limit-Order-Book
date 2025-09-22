@@ -23,8 +23,8 @@ void completeFillTest() {
 
     const OrderBook& book = eng.getBook();
 
-    assert(!book.containsId(1) && "order1 should be removed from the order book");
-    assert(!book.containsId(2) && "order2 should be removed from the order book");
+    assert(!book.contains(1) && "order1 should be removed from the order book");
+    assert(!book.contains(2) && "order2 should be removed from the order book");
 
     std::cout << "completeFillTest() passed!\n";
 }
@@ -79,7 +79,6 @@ void multiplePriceLevelTest() {
     OrderPointer secondHighestPriorityBuyOrder = book.getOrderByID(91);
 
     assert(!book.contains(90) && "highestPriorityBuyOrder should be removed from the order book");
-    assert(!book.contains(91) && "sellOrder1 should be removed from the order book");
     assert(secondHighestPriorityBuyOrder->getRemainingQuantity() == 5 && "secondHighestPriorityBuyOrder should have 5 remaining");
     assert(!book.contains(101) && "sellOrder2 should be removed from the order book");
 
@@ -110,7 +109,7 @@ void timePriorityMatchingTest() {
 
     assert(!book.contains(1) && "order1 should be removed from the order book");
     assert(book.contains(2) && "order2 should be in the order book");
-    assert( && "order2 should have 3 remaining");
+    assert(order2->getRemainingQuantity() == 3 && "order2 should have 3 remaining");
     assert(!book.contains(3) && "order3 should be removed from the order book");
 
     std::cout << "timePriorityMatchingTest() passed!\n";
