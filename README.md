@@ -82,7 +82,7 @@ Note: Each run yields varied results so these observations are approximate avera
 ## Project Tree
 ```bash
 Limit-Order-Book/
-├── Engine/                * Concurrency safe engine
+├── Engine/                * Concurrency-safe engine
 │   ├── BoundedQueue.cpp
 │   ├── BoundedQueue.h
 │   ├── Engine.cpp
