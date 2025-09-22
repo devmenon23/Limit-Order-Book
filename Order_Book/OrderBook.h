@@ -51,8 +51,6 @@ public:
     /**
      * @brief Matches buy and sell orders in the order book according to
      * price-time priority
-     *
-     * @return A shared pointer to the lowest ask in the order book
      */
     void matchOrders();
     /**
