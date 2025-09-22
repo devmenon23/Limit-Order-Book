@@ -1,5 +1,5 @@
 # Limit-Order-Book
-This Limit Order Book (LOB) is a high-performance, configurable implementation in modern C++. It is able to execute over **2,440,000 orders per second** and perform over **870,000 general operations per second**. The LOB's primary goal is to provide a robust core data structure for electronic trading systems, HFT, and quantitative research with a focus on **efficiency, accuracy, and maintainability**.
+This Limit Order Book (LOB) is a high-performance, configurable implementation in modern C++. It is able to execute over **2,250,000 nonconcurrent orders per second** and perform over **750,000 nonconcurrent general operations per second**. The LOB's primary goal is to provide a robust core data structure that is also concurrency-safe for electronic trading systems, HFT, and quantitative research with a focus on **efficiency, accuracy, and maintainability**.
 
 Benchmarking the performance of the Order Book was challenging, as realistic results require realistic data. For this, I implemented a market simulation using a **Markov chain and Pareto process** to generate synthetic but market-like order flow, which enables automated and realistic benchmarking.
 
@@ -9,7 +9,8 @@ Requires C++20
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make
-./Limit_Order_Book
+cd ..
+./build/Limit_Order_Book
 ```
 
 ## Background
@@ -66,19 +67,27 @@ P = Number of price levels swept during matching (often <<M in practice)
 | Cancel Order     | O(1)                | O(log M)            |
 | Match Orders     | O(1) per match      | O(P × N)            |
 
+### Concurrency Safety
+The engine architecture is designed to be concurrency-safe. Multiple producer threads are able to submit commands at the same time without interfering with each other, since they are funneled into a bounded, thread-safe queue. A dedicated worker thread consumes commands from this queue and applies them deterministically to the order book, which ensures that the order of operations is preserved and the matching logic remains consistent. The queue provides back-pressure, so if it becomes full, producers will block until space is available, preventing unbounded growth in memory usage. To improve throughput, the engine batches commands and triggers the matcher only after a threshold number of operations have been collected or when the queue becomes empty. This batching amortizes the cost of matching and reduces contention. In addition, the engine allows a user-defined error handler so that exceptions raised during command processing can be captured and dealt with gracefully without interrupting the system. This design maintains both thread safety and fairness while preserving price-time priority under heavy concurrent load.
 
 ## Benchmarking and Testing
 ### Order Flow Simulation
 In order to benchmark the LOB, it is neccessary to simulate the market order flow to ensure the benchmarking times are realistic. I utilized a Markov chain to model shifting market states (neutral, buy pressure, and sell pressure) so that the probability of generating buy or sell orders realistically adapts over time. For each simulated order, the generator samples the next market state, then decides the order side (buy or sell) accordingly. Order prices and sizes are sampled from Pareto distributions, producing the heavy-tailed, bursty behavior observed in real-world order books. This results in a realistic, dynamic stream of limit and market orders that stress-test the engine under authentic trading conditions.
 
 ### Latency Results
-Processing 5,000,000 order insertions resulted in an average total elapsed time of 2.05 seconds, yielding a throughput of 2,440,000 orders per second. For a mixed workload of 5,000,000 general operations, including adds, cancels, and modifies, the average elapsed time was 5.72 seconds, corresponding to a throughput of 870,000 operations per second. These results highlight the engine’s ability to maintain ultra-low latency and high throughput under realistic, high-frequency trading conditions.
+Processing 5,000,000 nonconcurrent order insertions resulted in an average total elapsed time of 2.22 seconds, yielding a throughput of 2,250,000 nonconcurrent orders per second. For a mixed workload of 5,000,000 nonconcurrent general operations, including adds, cancels, and modifies, the average elapsed time was 6.67 seconds, corresponding to a throughput of 750,000 nonconcurrent operations per second. These results highlight the engine’s ability to maintain ultra-low latency and high throughput under realistic, high-frequency trading conditions.
 
 Note: Each run yields varied results so these observations are approximate averages.
 
 ## Project Tree
 ```bash
 Limit-Order-Book/
+├── Engine/                * Concurrency safe engine
+│   ├── BoundedQueue.cpp
+│   ├── BoundedQueue.h
+│   ├── Engine.cpp
+│   ├── Engine.h
+│   └── EngineCommand.h
 ├── Order Book/            * Core order book implementation
 │   ├── Order.cpp
 │   ├── Order.h
@@ -91,8 +100,7 @@ Limit-Order-Book/
 │   ├── OrderBookTests.cpp
 │   └── OrderBookTests.h
 ├── CMakeLists.txt
-├── cmake-build-debug/
-└── cmake-build-release/
+├── .gitignore
 ├── README.md
 ```
 
